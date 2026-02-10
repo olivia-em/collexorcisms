@@ -7,7 +7,7 @@ const Search = () => {
 
   // Load poems
   useEffect(() => {
-    fetch("/assets/poems.txt")
+    fetch(`${import.meta.env.BASE_URL}assets/poems.txt`)
       .then((res) => res.text())
       .then((text) => {
         const lines = text
@@ -38,7 +38,7 @@ const Search = () => {
       setStatus(
         `Found in piece${matches.length > 1 ? "s" : ""}: ${matches
           .map((m) => m.idx + 1)
-          .join(", ")}`
+          .join(", ")}`,
       );
     } else {
       console.log("No answer found.");

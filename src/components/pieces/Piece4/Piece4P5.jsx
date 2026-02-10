@@ -44,7 +44,7 @@ const Piece4P5 = () => {
   const canvasRef = useRef();
 
   useEffect(() => {
-    fetch("/assets/iliad.txt")
+    fetch(`${import.meta.env.BASE_URL}assets/iliad.txt`)
       .then((res) => res.text())
       .then((text) => {
         const tokens = tokenize(text);
