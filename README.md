@@ -1,6 +1,6 @@
 # Deploying to GitHub Pages with Vite + React
 
-## 🚀 Quick Guide
+## Quick Guide
 
 ### 1. Push your code to GitHub
 
