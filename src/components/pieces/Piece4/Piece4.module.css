@@ -1,0 +1,66 @@
+.animatedWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.animatedWrapper {
+  /* position: absolute;
+  top: 0;
+  left: 0; */
+  width: 100%;
+  height: 100%;
+  position: relative;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: transparent;
+  opacity: 1;
+}
+.piece4Container {
+  background: #000;
+  width: 100vw;
+  height: 50vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.word {
+  color: cyan;
+  font-size: 0.8vh;
+  text-shadow: 0 0 5px cyan;
+}
+
+.firstGridWord {
+  color: red;
+  font-size: 0.58vh;
+}
+
+.gridContainer {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 100%;
+  height: fit-content;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-auto-rows: min-content;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: transparent;
+  opacity: 1;
+  z-index: 2;
+}
+
+.gridContainer[style*="z-index: 1"] {
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  grid-template-columns: repeat(auto-fill, minmax(1.5vw, 0fr));
+  padding: 0px;
+  height: 50vh;
+  overflow: hidden;
+}

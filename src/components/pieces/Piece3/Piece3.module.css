@@ -1,0 +1,101 @@
+/* Piece3 Secret Sharing Styles (CSS Module) */
+
+.piece3Container {
+  padding: 40px;
+  margin: 0 0;
+  width: 90%;
+}
+
+.piece3Form {
+  /* margin-bottom: 32px; */
+  display: flex;
+  flex-direction: column;
+}
+
+.piece3Label {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.piece3Select {
+  margin-left: 8px;
+}
+
+.piece3Input {
+  width: 50%;
+  padding: 8px;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  align-self: center;
+}
+
+.piece3File {
+  margin-bottom: 8px;
+  margin-left: 10%;
+  align-self: center;
+  text-align: center;
+}
+
+.piece3Button {
+  padding: 8px 24px;
+  min-width: 120px;
+  align-self: flex-end;
+  border: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.piece3Button:hover {
+  background-color: rgba(150, 0, 0, 0.5);
+  color: white;
+  transition: 0.3s ease;
+  border: none;
+  padding: 8px 16px;
+}
+
+.piece3Error {
+  color: red;
+  margin-top: 16px;
+}
+
+.piece3Poem {
+  width: 100vw;
+  height: 50vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.piece3PoemContent {
+  white-space: pre-line;
+  position: absolute;
+  mix-blend-mode: hard-light;
+  padding: 32px;
+  color: white;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.piece3PoemContent p {
+  line-height: 1.5;
+  font-size: 1.25vh;
+  background-color: black;
+}
+
+.piece3PoemBack {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.piece3Container p {
+  line-height: 1.5;
+  font-size: 1.25vh;
+  background-color: black;
+}
