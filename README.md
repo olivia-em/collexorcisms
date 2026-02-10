@@ -1,16 +1,59 @@
-# React + Vite
+# Deploying to GitHub Pages with Vite + React
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Quick Guide
 
-Currently, two official plugins are available:
+### 1. Push your code to GitHub
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Make sure all your changes are committed and pushed to the `main` branch:
 
-## React Compiler
+```sh
+git add .
+git commit -m "Ready for GitHub Pages deploy"
+git push origin main
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. GitHub Actions will build & deploy automatically
 
-## Expanding the ESLint configuration
+- The workflow in `.github/workflows/gh-pages.yml` will:
+  - Install dependencies
+  - Build your Vite app
+  - Deploy the `dist/` folder to the `gh-pages` branch
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+You can monitor progress in the "Actions" tab of your GitHub repo.
+
+### 3. Configure GitHub Pages
+
+1. Go to your repo on GitHub
+2. Click **Settings** > **Pages**
+3. Set **Source** to `gh-pages` branch, `/ (root)` folder
+4. Save
+
+### 4. Your site will be live at
+
+```
+https://<your-username>.github.io/<repo-name>/
+```
+
+---
+
+## ⚙️ Vite Config for GitHub Pages
+
+Make sure your `vite.config.js` has:
+
+```js
+export default defineConfig({
+  base: "/<repo-name>/",
+  // ...other config
+});
+```
+
+---
+
+## 🛠 Local Development
+
+```sh
+npm install
+npm run dev
+```
+
+Visit [http://localhost:5173](http://localhost:5173) to view your app locally.
