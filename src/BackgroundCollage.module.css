@@ -1,0 +1,48 @@
+.img1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-color: rgba(100, 0, 20, 1);
+  background-image: url(./assets/body/IMG_2916.jpg);
+  background: fit-content;
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: color-burn;
+  /* mix-blend-mode: darken; */
+}
+
+.img2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-color: rgba(100, 0, 20, 1);
+  background-image: url(./assets/body/IMG_2360.jpg);
+  background: fit-content;
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: darken;
+  mix-blend-mode: screen;
+}
+
+.img3 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 110vw;
+  height: 110vh;
+  overflow: hidden;
+  z-index: -1;
+  background-color: rgba(255, 0, 0, 1);
+  background-image: url(./assets/body/reach.jpg);
+  background: fit-content;
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: difference;
+  mix-blend-mode: color;
+}

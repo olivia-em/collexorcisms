@@ -1,0 +1,31 @@
+@font-face {
+  font-family: "Jacquard12";
+  src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.piece1Container {
+  display: flex;
+  width: 90%;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100vh;
+}
+
+.h2Title {
+  font-size: 1rem;
+  color: cyan;
+  margin-bottom: 0rem;
+  font-family: "Jacquard12", monospace;
+}
+
+.poemText {
+  font-size: 0.5rem;
+  font-weight: 800;
+  text-align: left;
+  max-width: 600px;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,26 @@
+body {
+  position: relative;
+  background-color: rgba(0, 0, 50, 1);
+
+  font-family: "Courier New", Courier, monospace;
+  color: #333333;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.z-scroll-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  display: flex;
+  flex-direction: column;
+}
+
+.z-piece {
+  min-height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
