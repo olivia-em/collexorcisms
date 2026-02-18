@@ -1,34 +1,31 @@
+@font-face {
+  font-family: "Jacquard12";
+  src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 .piece5Container {
-  width: 100vw;
-  height: 50vh;
+  display: flex;
+  width: 90%;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100vh;
+}
+
+.h2Title {
+  font-size: 1rem;
+  color: cyan;
+  margin-bottom: 0rem;
+  font-family: "Jacquard12", monospace;
+}
+
+.poemText {
+  font-size: 0.5rem;
+  font-weight: 800;
+  text-align: left;
+  max-width: 600px;
+  line-height: 1.7;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-}
-
-.piece5Container canvas {
-  width: 50vw !important;
-  height: 50vh !important;
-  display: block;
-}
-
-.piece5Button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  /* font-size: 1.5rem; */
-  padding: 8px 16px;
-  width: fit-content;
-  align-self: flex-end;
-  border: none;
-}
-
-.piece5Button:hover {
-  background-color: rgba(150, 0, 0, 0.5);
-  color: white;
-  transition: 0.3s ease;
-  border: none;
-  padding: 8px 16px;
 }

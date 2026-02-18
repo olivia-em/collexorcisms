@@ -1,66 +1,31 @@
-.animatedWrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+@font-face {
+  font-family: "Jacquard12";
+  src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
 }
 
-.animatedWrapper {
-  /* position: absolute;
-  top: 0;
-  left: 0; */
-  width: 100%;
-  height: 100%;
-  position: relative;
-  box-sizing: border-box;
-  pointer-events: none;
-  background: transparent;
-  opacity: 1;
-}
 .piece4Container {
-  background: #000;
-  width: 100vw;
-  height: 50vh;
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  width: 90%;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100vh;
 }
 
-.word {
+.h2Title {
+  font-size: 1rem;
   color: cyan;
-  font-size: 0.8vh;
-  text-shadow: 0 0 5px cyan;
+  margin-bottom: 0rem;
+  font-family: "Jacquard12", monospace;
 }
 
-.firstGridWord {
-  color: red;
-  font-size: 0.58vh;
-}
-
-.gridContainer {
-  position: absolute;
-  top: 50%;
-  left: 0%;
-  width: 100%;
-  height: fit-content;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  grid-auto-rows: min-content;
-  box-sizing: border-box;
-  pointer-events: none;
-  background: transparent;
-  opacity: 1;
-  z-index: 2;
-}
-
-.gridContainer[style*="z-index: 1"] {
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  grid-template-columns: repeat(auto-fill, minmax(1.5vw, 0fr));
-  padding: 0px;
-  height: 50vh;
-  overflow: hidden;
+.poemText {
+  font-size: 0.5rem;
+  font-weight: 800;
+  text-align: left;
+  max-width: 600px;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
 }

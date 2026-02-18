@@ -3,7 +3,7 @@ import { innerColorGroups, outerColorGroups } from "./colorGroups";
 
 export const sceneConfig = {
   camera: {
-    position: [0, 0, 25],
+    position: [0, 0, 100], // Start further back (was 25)
     fov: 50,
   },
   rotation: 0,

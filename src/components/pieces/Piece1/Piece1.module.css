@@ -1,3 +1,24 @@
+.terminalLink {
+  color: #00ffe7;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  margin: 0 0.2em;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    text-decoration-color 0.2s;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+.terminalLink:hover {
+  color: #fff;
+  background: #00ffe733;
+  text-decoration: underline;
+  text-decoration-color: #ff0044;
+  border-radius: 3px;
+}
 @font-face {
   font-family: "Jacquard12";
   src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
@@ -7,10 +28,110 @@
 
 .piece1Container {
   display: flex;
-  width: 90%;
-  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
   align-items: center;
-  height: 100vh;
+  background: transparent;
+  position: relative;
+  z-index: 0;
+}
+
+.terminalBox {
+  background: rgba(24, 24, 24, 0.92);
+  border-radius: 8px;
+  box-shadow: 0 0 24px #000a;
+  width: 100%;
+  height: 100%;
+  font-family: "Fira Mono", "Menlo", "Monaco", "Consolas", monospace;
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 0;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.terminalWindow {
+  padding: 0.5em;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.terminalWindow::-webkit-scrollbar {
+  width: 8px;
+}
+.terminalWindow::-webkit-scrollbar-thumb {
+  background: #00ffe7;
+  border-radius: 4px;
+}
+.terminalWindow::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 4px;
+}
+
+.terminalInputRow {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #2226;
+  padding-top: 0.5em;
+  background: transparent;
+}
+
+.terminalLine {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  margin-bottom: 0.2em;
+  display: block;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.prompt {
+  color: #00ffe7;
+  font-weight: bold;
+  margin-right: 0.5em;
+  font-family: inherit;
+}
+
+.terminalInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e0e0e0;
+  font-family: inherit;
+  font-size: inherit;
+  width: 60%;
+}
+
+.cursor {
+  color: #00ffe7;
+  font-weight: bold;
+  margin-left: 2px;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.terminalImg {
+  display: block;
+  max-width: 320px;
+  max-height: 180px;
+  margin: 0.5em 0 0.5em 2em;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px #0008;
 }
 
 .h2Title {
@@ -28,4 +149,68 @@
   line-height: 1.7;
   margin: 0;
   padding: 0;
+}
+
+.sectionBlock {
+  margin-bottom: 2em;
+}
+
+.continuePrompt {
+  position: absolute;
+  left: 2.5vw;
+  bottom: 2.5vh;
+  font-family: inherit;
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  background: rgba(24, 24, 24, 0.92);
+  border-radius: 6px;
+  padding: 0.5em 1em;
+  box-shadow: 0 0 8px #000a;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  z-index: 2;
+}
+
+.yBtn,
+.nBtn,
+.startBtn {
+  background: none;
+  border: none;
+  color: #00ffe7;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin: 0 0.2em;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  transition: background 0.2s;
+  pointer-events: auto;
+}
+
+.yBtn:hover {
+  background: #00ffe733;
+}
+.nBtn:hover {
+  background: #ff004433;
+  color: #ff0044;
+}
+.startBtn {
+  color: #fff;
+  background: #00ffe7;
+  border-radius: 4px;
+  padding: 0.3em 1em;
+  font-size: 1rem;
+  margin-top: 1em;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.startBtn:hover {
+  background: #00bfae;
+  color: #fff;
+}
+
+.terminalBox {
+  position: relative;
 }

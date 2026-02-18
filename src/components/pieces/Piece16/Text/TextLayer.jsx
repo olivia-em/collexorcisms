@@ -17,7 +17,7 @@ export default function TextLayer({
     font,
     text,
     fontSize,
-    targetWidthMultiplier
+    targetWidthMultiplier,
   );
   const { getWordColor } = useColorGroups(colorGroups);
 
@@ -32,7 +32,7 @@ export default function TextLayer({
       const yPos = totalHeight / 2 - lineIdx * lineHeight;
       const totalLineWidth = lineWords.reduce(
         (sum, data, idx) => sum + data.width + (idx > 0 ? spaceWidth : 0),
-        0
+        0,
       );
 
       let xOffset = -totalLineWidth / 2;

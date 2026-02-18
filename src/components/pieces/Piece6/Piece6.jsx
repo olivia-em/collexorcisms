@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import p5 from "p5";
-import styles from "./Piece4.module.css";
+import styles from "./Piece6.module.css";
 
 const GROUPS = [
   { min: 10, max: 99 },
@@ -39,7 +39,7 @@ function groupWords(tokens) {
   return groups;
 }
 
-const Piece4P5 = () => {
+const Piece6 = () => {
   const [groups, setGroups] = useState([]);
   const canvasRef = useRef();
 
@@ -134,10 +134,10 @@ const Piece4P5 = () => {
   }, [groups]);
 
   return (
-    <div className={styles.piece4Container}>
+    <div className={styles.piece6Container}>
       <div ref={canvasRef} />
     </div>
   );
 };
 
-export default Piece4P5;
+export default Piece6;
