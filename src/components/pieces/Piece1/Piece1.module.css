@@ -38,7 +38,11 @@
 }
 
 .terminalBox {
-  background: rgba(24, 24, 24, 0.92);
+  background: rgba(0, 255, 255, 1);
+  background-blend-mode: difference;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 8px;
   box-shadow: 0 0 24px #000a;
   width: 100%;
@@ -64,10 +68,10 @@
 .terminalWindow::-webkit-scrollbar {
   width: 8px;
 }
-.terminalWindow::-webkit-scrollbar-thumb {
+/* .terminalWindow::-webkit-scrollbar-thumb {
   background: #00ffe7;
   border-radius: 4px;
-}
+} */
 .terminalWindow::-webkit-scrollbar-track {
   background: #222;
   border-radius: 4px;
@@ -88,10 +92,13 @@
   display: block;
   pointer-events: auto;
   user-select: text;
+  color: white;
+  mix-blend-mode: difference;
 }
 
 .prompt {
-  color: #00ffe7;
+  color: white;
+  mix-blend-mode: difference;
   font-weight: bold;
   margin-right: 0.5em;
   font-family: inherit;
@@ -127,9 +134,9 @@
 
 .terminalImg {
   display: block;
-  max-width: 320px;
-  max-height: 180px;
-  margin: 0.5em 0 0.5em 2em;
+  /* max-width: 520px; */
+  max-height: 300px;
+  /* margin: 0.5em 0 0.5em 2em; */
   border-radius: 4px;
   box-shadow: 0 2px 8px #0008;
 }
@@ -209,8 +216,4 @@
 .startBtn:hover {
   background: #00bfae;
   color: #fff;
-}
-
-.terminalBox {
-  position: relative;
 }

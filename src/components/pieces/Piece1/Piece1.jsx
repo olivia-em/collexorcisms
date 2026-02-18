@@ -9,92 +9,45 @@ const PAGES = {
   index: {
     title: "Terminal Story Index",
     sections: [
-      { id: "section1", label: "Section 1" },
-      { id: "section2", label: "Section 2" },
-      { id: "section3", label: "Section 3" },
-      { id: "section4", label: "Section 4" },
+      { id: "section1", label: "JB_V1" },
+      { id: "section2", label: "JB_V2" },
+      { id: "section3", label: "JB_V3" },
+      { id: "section4", label: "JB_V4" },
     ],
   },
   section1: {
-    cd: "olivialee@10-08-2001 cd section 1",
+    nextSection: "section2",
+    cd: "olivialee@10-08-2001 JB_V1 %",
     img: img1,
-    text: [
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-      { link: "section2", label: "Go to Section 2" },
-    ],
+    text: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit."],
   },
   section2: {
-    cd: "olivialee@10-08-2001 cd section 2",
+    nextSection: "section3",
+    cd: "olivialee@10-08-2001 JB_V2 %",
     img: img2,
     text: [
       "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      { link: "section3", label: "Go to Section 3" },
     ],
   },
   section3: {
-    cd: "olivialee@10-08-2001 cd section 3",
+    nextSection: "section4",
+    cd: "olivialee@10-08-2001 JB_V3 %",
     img: img3,
-    text: [
-      "Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
-      { link: "section4", label: "Go to Section 4" },
-    ],
+    text: ["Ut enim ad minim veniam, quis nostrud exercitation ullamco."],
   },
   section4: {
-    cd: "olivialee@10-08-2001 cd section 4",
+    nextSection: null,
+    cd: "olivialee@10-08-2001 JB_V4 %",
     img: img4,
-    text: [
-      "Duis aute irure dolor in reprehenderit in voluptate velit esse.",
-      { link: "index", label: "Back to Index" },
-    ],
+    text: ["Duis aute irure dolor in reprehenderit in voluptate velit esse."],
   },
 };
 
 const PROMPT = "olivialee@10-08-2001 justbones % ls";
 
-function renderLine(line, setPage, styles) {
-  if (Array.isArray(line)) {
-    return (
-      <span>
-        {line.map((part, j) => {
-          if (typeof part === "object" && part.link) {
-            return (
-              <a
-                key={j}
-                href="#"
-                className={styles.terminalLink}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPage(part.link);
-                }}
-              >
-                {part.label}
-              </a>
-            );
-          }
-          return <React.Fragment key={j}>{part}</React.Fragment>;
-        })}
-      </span>
-    );
-  }
-  if (typeof line === "object" && line.link) {
-    return (
-      <a
-        href="#"
-        className={styles.terminalLink}
-        onClick={(e) => {
-          e.preventDefault();
-          setPage(line.link);
-        }}
-      >
-        {line.label}
-      </a>
-    );
-  }
-  return <span>{line}</span>;
-}
-
 function Piece1() {
   const [page, setPage] = useState("index");
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const terminalWindowRef = useRef(null);
 
   useEffect(() => {
@@ -102,7 +55,46 @@ function Piece1() {
       terminalWindowRef.current.scrollTop =
         terminalWindowRef.current.scrollHeight;
     }
-  }, [page]);
+  }, [page, selectedIndex]);
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (page === "index") {
+        const sections = PAGES.index.sections;
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev > 0 ? prev - 1 : sections.length - 1,
+          );
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev < sections.length - 1 ? prev + 1 : 0,
+          );
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          setPage(sections[selectedIndex].id);
+          setSelectedIndex(0);
+        }
+      } else {
+        // Section page
+        if (e.key === "y" || e.key === "Y") {
+          e.preventDefault();
+          const nextSection = PAGES[page].nextSection;
+          if (nextSection) {
+            setPage(nextSection);
+          }
+        } else if (e.key === "n" || e.key === "N") {
+          e.preventDefault();
+          setPage("index");
+          setSelectedIndex(0);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [page, selectedIndex]);
 
   if (page === "index") {
     const { sections } = PAGES.index;
@@ -116,21 +108,26 @@ function Piece1() {
             <div className={styles.terminalLine}>
               {sections.map((section, idx) => (
                 <React.Fragment key={section.id}>
-                  <a
-                    href="#"
-                    className={styles.terminalLink}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPage(section.id);
-                    }}
+                  <span
+                  // className={
+                  //   idx === selectedIndex
+                  //     ? styles.terminalLinkSelected
+                  //     : styles.terminalLink
+                  // }
                   >
                     {section.label}
-                  </a>
+                  </span>
                   {idx < sections.length - 1 && (
                     <span style={{ margin: "0 1em" }}> </span>
                   )}
                 </React.Fragment>
               ))}
+            </div>
+            <div className={styles.terminalLine}>
+              <span>
+                olivialee@10-08-2001 justbones % cd{" "}
+                {sections[selectedIndex].label.toLowerCase()} (Enter)
+              </span>
             </div>
           </div>
         </div>
@@ -139,27 +136,38 @@ function Piece1() {
   }
 
   // Section page
-  const { cd, img, text } = PAGES[page];
+  const { cd, img, text, nextSection } = PAGES[page];
   return (
     <div className={styles.piece1Container}>
-      <div className={styles.terminalBox}>
+      <div
+        className={styles.terminalBox}
+        style={{ backgroundImage: `url(${img})` }}
+      >
         <div className={styles.terminalWindow} ref={terminalWindowRef}>
-          <div className={styles.terminalLine}>
+          {/* <div className={styles.terminalLine}>
             <span className={styles.prompt}>{PROMPT}</span>
-          </div>
+          </div> */}
           <div className={styles.sectionBlock}>
             <div className={styles.terminalLine}>
               <span className={styles.prompt}>{cd}</span>
             </div>
-            <div className={styles.terminalLine}>
+            {/* <div className={styles.terminalLine}>
               <img src={img} alt={cd} className={styles.terminalImg} />
-            </div>
-            {/* Render each line of text, supporting arrays and links */}
+            </div> */}
             {text.map((line, i) => (
               <div className={styles.terminalLine} key={i}>
-                {renderLine(line, setPage, styles)}
+                <span>{line}</span>
               </div>
             ))}
+            <div className={styles.terminalLine}>
+              <span>
+                {nextSection
+                  ? "cd ../JB_V" +
+                    Object.keys(PAGES).indexOf(nextSection) +
+                    " (y/n)"
+                  : "cd .. (y/n)"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
