@@ -7,25 +7,50 @@
 
 .piece5Container {
   display: flex;
-  width: 90%;
-  justify-content: flex-start;
-  align-items: center;
-  height: 100vh;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+  gap: 1rem;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
-.h2Title {
-  font-size: 1rem;
+.titleDiv {
+  font-size: 2rem;
   color: cyan;
-  margin-bottom: 0rem;
   font-family: "Jacquard12", monospace;
+  margin-bottom: 0rem;
+  text-align: left;
 }
 
-.poemText {
-  font-size: 0.5rem;
-  font-weight: 800;
-  text-align: left;
-  max-width: 600px;
-  line-height: 1.7;
-  margin: 0;
-  padding: 0;
+.ampersand {
+  color: #535bf2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.ampersand:hover {
+  text-shadow: 0 0 10px #535bf2;
+  /* border-bottom: 2px solid cyan; */
+}
+
+.questionDiv,
+.introDiv,
+.memoryDiv,
+.outroDiv,
+.hallucinationDiv {
+  font-size: 0.7rem;
+  color: rgba(0, 255, 255, 1);
+  font-weight: 700;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.4;
+  /* min-height: 2rem; */
+}
+
+.hallucinationDiv {
+  color: rgba(255, 200, 200, 0.8);
+  font-style: italic;
 }

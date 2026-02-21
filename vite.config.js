@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   // No server/proxy needed for static build
-  // Set base for GitHub Pages deployment (update 'collexorcisms' if repo name differs)
-  base: "/collexorcisms/",
-  // base: "",
+  // Use root base for custom domain deployment
+  base: "/",
 });
