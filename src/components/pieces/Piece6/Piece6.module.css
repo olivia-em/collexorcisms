@@ -31,11 +31,13 @@
   color: cyan;
   font-size: 0.8vh;
   text-shadow: 0 0 5px cyan;
+  font-weight: 800;
 }
 
 .firstGridWord {
   color: red;
   font-size: 0.58vh;
+  font-weight: 800;
 }
 
 .gridContainer {
