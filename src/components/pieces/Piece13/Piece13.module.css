@@ -8,7 +8,7 @@
 .piece13Container {
   display: flex;
   width: 90%;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   height: 100vh;
 }
@@ -28,4 +28,17 @@
   line-height: 1.7;
   margin: 0;
   padding: 0;
+}
+
+.symbolText {
+  font-size: 4rem;
+  color: cyan;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.hoverSymbol {
+  cursor: pointer;
+  transition: all 0.2s ease;
 }

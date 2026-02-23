@@ -33,7 +33,7 @@ function SecretForm({
       </label>
       <input
         type="text"
-        placeholder="?*/*^%#%$#@!$^&()(&%$@#$%^&?:"
+        placeholder="?*/*^%#%$#@!$^&()(&%$@#$%^&?:&^%%$&^*&^$&*^%$^%"
         value={secret}
         onChange={(e) => setSecret(e.target.value)}
         required

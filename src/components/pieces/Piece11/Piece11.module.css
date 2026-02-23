@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "Jacquard12";
+  src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 .piece11Container {
   padding: 40px;
   margin: 0 0;
@@ -13,6 +20,7 @@
 .piece11Label {
   display: block;
   margin-bottom: 20px;
+  align-self: center;
 }
 
 .piece11Select {
@@ -36,20 +44,27 @@
 
 .piece11Button {
   padding: 8px 24px;
+  font-family: "Jacquard12", monospace;
+  font-size: 2.5rem;
+  color: cyan;
   min-width: 120px;
   align-self: flex-end;
   border: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background-color: transparent;
+  padding: 0;
+  align-self: center;
 }
 
 .piece11Button:hover {
-  background-color: rgba(150, 0, 0, 0.5);
-  color: white;
+  background-color: transparent;
+  color: black;
+  text-shadow: 0 0 8px cyan;
   transition: 0.3s ease;
   border: none;
-  padding: 8px 16px;
+  padding: 0;
 }
 
 .piece11Error {

@@ -15,7 +15,7 @@
 
 .h2Title {
   font-size: 1rem;
-  color: cyan;
+  color: white;
   margin-bottom: 0rem;
   font-family: "Jacquard12", monospace;
 }
@@ -26,6 +26,32 @@
   text-align: left;
   max-width: 600px;
   line-height: 1.7;
+  color: cyan;
   margin: 0;
   padding: 0;
+}
+
+.poemLayout {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.columns {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+}
+
+.line {
+  min-height: 1.2em;
+  word-wrap: break-word;
+}
+
+.rightColumn {
+  margin-top: 2.1rem;
 }

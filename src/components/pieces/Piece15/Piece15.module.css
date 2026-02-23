@@ -26,6 +26,44 @@
   text-align: left;
   max-width: 600px;
   line-height: 1.7;
+  color: white;
   margin: 0;
   padding: 0;
+}
+
+.poemLayout {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.columns {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+}
+
+.line {
+  min-height: 1.2em;
+  word-wrap: break-word;
+}
+
+.rightColumn {
+  margin-top: 3rem;
+}
+
+.inlineLink {
+  color: cyan;
+  text-decoration: none;
+  font-family: "Jacquard12", monospace;
+  /* font-size: 1.5rem; */
+  display: inline-block;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
 }

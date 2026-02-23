@@ -46,7 +46,7 @@ const poetryPages = {
       ["she ", { link: "1920", label: "remembers" }, " me"],
       "she's peeking through the blinds",
       "she is not me",
-      "in the memories I left behind",
+      "in the memories left behind",
     ],
   },
   202224: {

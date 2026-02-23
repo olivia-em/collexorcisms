@@ -81,7 +81,7 @@
 .titleButton:disabled {
   /* opacity: 0.5; */
   cursor: text;
-  color: white;
+  /* color: white; */
   /* cursor: not-allowed; */
 }
 
