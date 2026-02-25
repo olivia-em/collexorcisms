@@ -1,10 +1,70 @@
 import React, { useEffect, useState, useRef } from "react";
+import ReactDOM from "react-dom";
 import styles from "./Piece18.module.css";
 
 const Piece18 = () => {
   const [showOverlay, setShowOverlay] = useState(true);
   const [visibleMonsters, setVisibleMonsters] = useState([0, 1]);
+  const [activeTooltip, setActiveTooltip] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const quotesRef = useRef(null);
+
+  const tooltips = {
+    section1: (
+      <>
+        doctor doctor
+        <br />
+        fix me please
+        <br />
+        craft your misery
+        <br />
+        in the image of me
+      </>
+    ),
+    section2: (
+      <>
+        a year and change
+        <br />
+        a knockoff noose
+        <br />
+        i feel nothing at all
+        <br />
+        but i like to bruise
+      </>
+    ),
+    section3: (
+      <>
+        a year and change
+        <br />
+        and i am, i am she
+        <br />
+        i am the creature
+        <br />
+        you'd made of me
+      </>
+    ),
+  };
+
+  const handleMouseEnter = (e, section) => {
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+    setActiveTooltip(section);
+  };
+
+  const handleMouseMove = (e) => {
+    if (activeTooltip) {
+      setTooltipPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setActiveTooltip(null);
+  };
 
   useEffect(() => {
     // Fill container with text
@@ -68,9 +128,7 @@ const Piece18 = () => {
     "monster13.PNG",
     "monster14.jpg",
     "monster15.png",
-    "monster16.png",
     "monster17.jpg",
-    "monster18.png",
     "monster19.JPG",
     "monster20.JPG",
     "monster21.JPG",
@@ -170,9 +228,30 @@ const Piece18 = () => {
         </p>
       </div>
 
+      {/* Tooltip - rendered outside blend mode context via portal */}
+      {activeTooltip &&
+        ReactDOM.createPortal(
+          <div
+            className={styles.tooltip}
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+            }}
+          >
+            {tooltips[activeTooltip]}
+          </div>,
+          document.body,
+        )}
+
       {/* Poem */}
       <div className={styles.poem}>
-        <div className={styles.poemSection}>
+        <div
+          id="poemSection1"
+          className={styles.poemSection}
+          onMouseEnter={(e) => handleMouseEnter(e, "section1")}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           <h1>
             doctor doctor
             <br />
@@ -183,7 +262,13 @@ const Piece18 = () => {
             in the image of me <br />
           </h1>
         </div>
-        <div className={styles.poemSection}>
+        <div
+          id="poemSection2"
+          className={styles.poemSection}
+          onMouseEnter={(e) => handleMouseEnter(e, "section2")}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           <h1>
             a year and change <br />
             a knockoff noose
@@ -194,7 +279,13 @@ const Piece18 = () => {
             <br />
           </h1>
         </div>
-        <div className={styles.poemSection}>
+        <div
+          id="poemSection3"
+          className={styles.poemSection}
+          onMouseEnter={(e) => handleMouseEnter(e, "section3")}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           <h1>
             a year and change
             <br />

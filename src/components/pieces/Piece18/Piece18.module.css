@@ -32,6 +32,16 @@
   cursor: pointer;
 }
 
+.preloadOverlay:hover {
+  box-shadow: inset 0 0 100px rgba(255, 255, 255, 0.3);
+}
+
+.preloadOverlay:hover .preloadText {
+  text-shadow:
+    0 0 20px white,
+    0 0 40px white;
+}
+
 .preloadText {
   font-family: "Jacquard12", serif;
   font-size: 2.2rem;
@@ -109,6 +119,26 @@
   background-color: black;
   padding: 20px;
   mix-blend-mode: color-burn;
+  position: relative;
+  cursor: help;
+}
+
+.tooltip {
+  position: fixed;
+  transform: translate(-60px, -100%);
+  background-color: rgba(0, 0, 0, 0.95);
+  color: cyan;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: "Jacquard12", monospace;
+  white-space: normal;
+  width: 100px;
+  text-align: center;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+  border: 1px solid cyan;
+  pointer-events: none;
 }
 
 .poem h1 {
