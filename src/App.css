@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "Jacquard12";
+  src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   position: relative;
   background-color: rgba(0, 0, 50, 1);
@@ -22,4 +29,71 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.loadingOverlay.fadeOut {
+  opacity: 0;
+}
+
+.loadingTitle {
+  font-family: "Jacquard12", serif;
+  font-size: 3rem;
+  color: white;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.byline {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  font-family: "Jacquard12", serif;
+  font-size: 1rem;
+  color: white;
+  margin: 0;
+  opacity: 0;
+}
+
+.byline.show {
+  animation: fadeIn 1s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.blinkingCursor {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
