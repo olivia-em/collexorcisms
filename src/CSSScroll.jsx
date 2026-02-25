@@ -42,6 +42,11 @@ function Piece({ z, cameraZ, children }) {
     opacity = 0;
   }
 
+  // Only mount children when they're reasonably close to viewport
+  // This creates a loading buffer zone before pieces come into view
+  const mountDistance = 2000; // Mount pieces within 2000px of camera
+  const shouldMount = Math.abs(distance) < mountDistance;
+
   return (
     <div
       style={{
@@ -62,7 +67,7 @@ function Piece({ z, cameraZ, children }) {
         transition: "opacity 0.1s",
       }}
     >
-      {children}
+      {shouldMount ? children : null}
     </div>
   );
 }

@@ -6,7 +6,12 @@ export const ANIMATION_SPEED = {
   backspace: 20, // Time per character when deleting
 };
 
-const AnimatedLine = ({ operation, lineIndex, onComplete }) => {
+const AnimatedLine = ({
+  operation,
+  lineIndex,
+  onComplete,
+  reverse = false,
+}) => {
   const [displayText, setDisplayText] = useState("");
   const onCompleteRef = useRef(onComplete);
 
@@ -50,7 +55,12 @@ const AnimatedLine = ({ operation, lineIndex, onComplete }) => {
     const step = () => {
       if (operation.type === "add") {
         if (typeIndex <= operation.line.length) {
-          setDisplayText(operation.line.slice(0, typeIndex));
+          if (reverse) {
+            const startIndex = operation.line.length - typeIndex;
+            setDisplayText(operation.line.slice(startIndex));
+          } else {
+            setDisplayText(operation.line.slice(0, typeIndex));
+          }
           typeIndex += 1;
           timeoutId = setTimeout(step, ANIMATION_SPEED.type);
         } else {
@@ -61,7 +71,13 @@ const AnimatedLine = ({ operation, lineIndex, onComplete }) => {
 
       if (operation.type === "delete") {
         if (deleteIndex >= 0) {
-          setDisplayText(operation.line.slice(0, deleteIndex));
+          if (reverse) {
+            setDisplayText(
+              operation.line.slice(operation.line.length - deleteIndex),
+            );
+          } else {
+            setDisplayText(operation.line.slice(0, deleteIndex));
+          }
           deleteIndex -= 1;
           timeoutId = setTimeout(step, ANIMATION_SPEED.backspace);
         } else {
@@ -73,7 +89,13 @@ const AnimatedLine = ({ operation, lineIndex, onComplete }) => {
       if (operation.type === "modify") {
         if (phase === "backspace") {
           if (deleteIndex >= 0) {
-            setDisplayText(operation.oldLine.slice(0, deleteIndex));
+            if (reverse) {
+              setDisplayText(
+                operation.oldLine.slice(operation.oldLine.length - deleteIndex),
+              );
+            } else {
+              setDisplayText(operation.oldLine.slice(0, deleteIndex));
+            }
             deleteIndex -= 1;
             timeoutId = setTimeout(step, ANIMATION_SPEED.backspace);
           } else {
@@ -83,7 +105,12 @@ const AnimatedLine = ({ operation, lineIndex, onComplete }) => {
           }
         } else {
           if (typeIndex <= operation.newLine.length) {
-            setDisplayText(operation.newLine.slice(0, typeIndex));
+            if (reverse) {
+              const startIndex = operation.newLine.length - typeIndex;
+              setDisplayText(operation.newLine.slice(startIndex));
+            } else {
+              setDisplayText(operation.newLine.slice(0, typeIndex));
+            }
             typeIndex += 1;
             timeoutId = setTimeout(step, ANIMATION_SPEED.type);
           } else {

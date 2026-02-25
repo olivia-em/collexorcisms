@@ -1,0 +1,205 @@
+@font-face {
+  font-family: "Jacquard 12";
+  src: url("../assets/Jacquard_12/Jacquard12-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+#preload-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.preload-text {
+  font-family: "Jacquard 12", serif;
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.blinking-cursor {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: black;
+  margin: 0px;
+  overflow-y: hidden;
+}
+
+div#frankenstein {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  z-index: -1;
+  /* padding: 20px; */
+  /* border: 2px solid white; */
+  background-color: black;
+}
+
+p {
+  font-family: "Jacquard 12";
+  font-size: 18px;
+  color: white;
+  margin: 0;
+  /* z-index: -2; */
+  /* line-height: 1.6; */
+}
+
+/* Monster background divs */
+div[id^="M"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: difference;
+  z-index: 0;
+  pointer-events: none;
+}
+
+div#M1 {
+  background-image: url("../assets/photos/monster1.JPG");
+}
+div#M2 {
+  background-image: url("../assets/photos/monster2.jpg");
+}
+div#M3 {
+  background-image: url("../assets/photos/monster3.JPG");
+}
+div#M4 {
+  background-image: url("../assets/photos/monster4.JPG");
+}
+div#M5 {
+  background-image: url("../assets/photos/monster5.JPG");
+}
+div#M6 {
+  background-image: url("../assets/photos/monster6.JPG");
+}
+div#M7 {
+  background-image: url("../assets/photos/monster7.jpg");
+}
+div#M8 {
+  background-image: url("../assets/photos/monster8.jpg");
+}
+div#M9 {
+  background-image: url("../assets/photos/monster9.jpg");
+}
+div#M10 {
+  background-image: url("../assets/photos/monster10.jpg");
+}
+div#M11 {
+  background-image: url("../assets/photos/monster11.jpg");
+}
+div#M12 {
+  background-image: url("../assets/photos/monster12.PNG");
+}
+div#M13 {
+  background-image: url("../assets/photos/monster13.PNG");
+}
+div#M14 {
+  background-image: url("../assets/photos/monster14.jpg");
+}
+div#M15 {
+  background-image: url("../assets/photos/monster15.png");
+  /* mix-blend-mode: color-burn !important;
+  background-color: blue; */
+}
+div#M16 {
+  background-image: url("../assets/photos/monster16.png");
+}
+div#M17 {
+  background-image: url("../assets/photos/monster17.jpg");
+}
+div#M18 {
+  background-image: url("../assets/photos/monster18.png");
+  /* mix-blend-mode: color-burn !important;
+  background-color: blue; */
+}
+div#M19 {
+  background-image: url("../assets/photos/monster19.JPG");
+}
+div#M20 {
+  background-image: url("../assets/photos/monster20.JPG");
+}
+div#M21 {
+  background-image: url("../assets/photos/monster21.JPG");
+}
+
+div#poem {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 70vw;
+  height: auto;
+  z-index: 2;
+  text-align: center;
+  background-color: red;
+  color: white;
+  padding: 20px;
+  font-family: "Jacquard 12";
+  mix-blend-mode: difference;
+}
+
+div#poem > div {
+  background-color: black;
+  padding: 20px;
+  mix-blend-mode: color-burn;
+}
+
+a#please,
+a#change,
+a#me {
+  /* color: white; */
+  text-decoration: none;
+  border-bottom: none;
+}
+
+a:hover {
+  color: red !important;
+  box-shadow: 0px 0px 30px red;
+}
+
+div.nav {
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: white;
+  mix-blend-mode: difference;
+  margin: 20px auto;
+  cursor: pointer;
+}
+
+div.nav:hover {
+  box-shadow: 0px 0px 50px red;
+}

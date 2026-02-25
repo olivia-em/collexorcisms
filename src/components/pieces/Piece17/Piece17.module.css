@@ -7,15 +7,22 @@
 
 .piece17Container {
   display: flex;
-  width: 90%;
+  background-color: rgba(150, 25, 25, 1);
+  background-image: url("/assets/piece17/N23.png");
+  background-blend-mode: color-burn;
+  background: fit-content;
+  background-size: cover;
+  background-position: center;
+  width: 100%;
   justify-content: flex-start;
   align-items: center;
-  height: 100vh;
+  height: 50vh;
+  overflow: hidden;
 }
 
 .h2Title {
   font-size: 1rem;
-  color: cyan;
+  color: white;
   margin-bottom: 0rem;
   font-family: "Jacquard12", monospace;
 }
@@ -24,8 +31,14 @@
   font-size: 0.5rem;
   font-weight: 800;
   text-align: left;
-  max-width: 600px;
+  max-height: 100%;
+  /* max-width: 600px; */
   line-height: 1.7;
   margin: 0;
-  padding: 0;
+  padding: 50px;
+}
+
+.poetryLink:hover {
+  transition: 0.5s ease-out;
+  color: red;
 }

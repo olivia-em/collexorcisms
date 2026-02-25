@@ -14,7 +14,7 @@
   /* mix-blend-mode: darken; */
 }
 
-.img2 {
+/* .img2 {
   position: absolute;
   top: 0;
   left: 0;
@@ -28,7 +28,7 @@
   background-position: center;
   background-blend-mode: darken;
   mix-blend-mode: screen;
-}
+} */
 
 .img3 {
   position: absolute;

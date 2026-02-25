@@ -74,7 +74,7 @@ const Piece8 = () => {
             onClick={handleNext}
             disabled={isDisabled}
           >
-            objects
+            objects in eleven
           </button>
         </div>
         <div className={styles.columns}>
@@ -85,6 +85,7 @@ const Piece8 = () => {
                   operation={op}
                   lineIndex={index}
                   onComplete={handleLineComplete}
+                  reverse={true}
                 />
               </div>
             ))}

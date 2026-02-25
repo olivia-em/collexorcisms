@@ -46,7 +46,8 @@
 
 .generateButton:hover {
   /* background-color: cyan; */
-  color: black;
+  transition: 0.5s ease-out;
+  color: red;
   text-shadow: 0 0 10px cyan;
   /* box-shadow: ; */
 }

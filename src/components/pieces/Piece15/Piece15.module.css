@@ -38,7 +38,7 @@
 
 .columns {
   display: flex;
-  gap: 2rem;
+  /* gap: 2rem; */
   width: 100%;
 }
 
@@ -53,7 +53,7 @@
 }
 
 .rightColumn {
-  margin-top: 3rem;
+  margin-top: 2.5rem;
 }
 
 .inlineLink {

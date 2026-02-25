@@ -7,25 +7,112 @@
 
 .piece18Container {
   display: flex;
-  width: 90%;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  position: relative;
+  overflow: hidden;
 }
 
-.h2Title {
-  font-size: 1rem;
-  color: cyan;
-  margin-bottom: 0rem;
-  font-family: "Jacquard12", monospace;
+.preloadOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.5s;
+  cursor: pointer;
 }
 
-.poemText {
-  font-size: 0.5rem;
-  font-weight: 800;
-  text-align: left;
-  max-width: 600px;
-  line-height: 1.7;
+.preloadText {
+  font-family: "Jacquard12", serif;
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.blinkingCursor {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.frankenstein {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
-  padding: 0;
+  z-index: 0;
+  background-color: black;
+  overflow: hidden;
+}
+
+.quotes {
+  font-family: "Jacquard12";
+  font-size: 10px;
+  color: white;
+  margin: 0;
+}
+
+.monsterDiv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-color: white;
+  mix-blend-mode: difference;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.poem {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 70vw;
+  height: auto;
+  z-index: 2;
+  text-align: center;
+  background-color: red;
+  color: white;
+  padding: 20px;
+  font-family: "Jacquard12";
+  mix-blend-mode: difference;
+}
+
+.poemSection {
+  background-color: black;
+  padding: 20px;
+  mix-blend-mode: color-burn;
+}
+
+.poem h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: normal;
 }

@@ -1,5 +1,5 @@
-import React, { Suspense, useState, useCallback, useEffect } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import React, { Suspense, useState, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import BacksideSphere from "./Spheres/BacksideSphere";
 import SpotlightGroup from "./Lights/SpotlightGroup";
@@ -14,18 +14,23 @@ import {
 import styles from "./Piece16.module.css";
 
 export default function Piece16({ ...canvasProps }) {
-  // If you want keyboard spotlight toggling, add a KeyboardControls component and state here
-  // Example: const [lightVisibility, setLightVisibility] = useState([true, true, true]);
-
   const [showCanvas, setShowCanvas] = useState(false);
+
+  useEffect(() => {
+    // Cleanup on unmount - reset button state
+    return () => {
+      setShowCanvas(false);
+    };
+  }, []);
+
+  const handleButtonClick = () => {
+    setShowCanvas(true);
+  };
 
   return (
     <div className={styles.piece16Container}>
       {!showCanvas && (
-        <button
-          onClick={() => setShowCanvas(true)}
-          className={styles.piece16Button}
-        >
+        <button onClick={handleButtonClick} className={styles.piece16Button}>
           light <i>light</i>{" "}
           <strong>
             <i>light</i>
