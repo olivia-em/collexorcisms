@@ -32,14 +32,15 @@
   cursor: pointer;
 }
 
-.preloadOverlay:hover {
+/* .preloadOverlay:hover {
   box-shadow: inset 0 0 100px rgba(255, 255, 255, 0.3);
-}
+} */
 
 .preloadOverlay:hover .preloadText {
-  text-shadow:
+  /* text-shadow:
     0 0 20px white,
-    0 0 40px white;
+    0 0 40px white; */
+  color: #e05555;
 }
 
 .preloadText {

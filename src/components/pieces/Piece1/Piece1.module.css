@@ -66,9 +66,9 @@
   stroke: #ff3333;
 }
 
-.folderBtn:hover .folderIcon {
+/* .folderBtn:hover .folderIcon {
   filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 20px #00ffff44);
-}
+} */
 
 /* ── Label ───────────────────────────────────────────────────────────────── */
 
