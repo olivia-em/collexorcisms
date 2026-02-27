@@ -1,4 +1,4 @@
-import{j as o}from"./index-CxDjZz0G.js";const c="_piece3Container_r2vew_8",l="_birdsContainer_r2vew_20",h="_bird_r2vew_20",m="_poemText_r2vew_78",n={piece3Container:c,birdsContainer:l,bird:h,poemText:m},b=()=>{const s=`lack of flight   
+import{j as o}from"./index-BpdqRh2S.js";const c="_piece3Container_r2vew_8",l="_birdsContainer_r2vew_20",h="_bird_r2vew_20",m="_poemText_r2vew_78",n={piece3Container:c,birdsContainer:l,bird:h,poemText:m},b=()=>{const s=`lack of flight   
 
 I sit atop the stairs
 white carpeted and stained
