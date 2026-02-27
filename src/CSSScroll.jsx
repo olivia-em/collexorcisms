@@ -1,7 +1,6 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, Suspense, lazy } from "react";
 import styles from "./CSSScroll.module.css";
 
-import { Suspense, lazy } from "react";
 const Piece1 = lazy(() => import("./components/pieces/Piece1/Piece1"));
 const Piece2 = lazy(() => import("./components/pieces/Piece2/Piece2"));
 const Piece3 = lazy(() => import("./components/pieces/Piece3/Piece3"));
@@ -25,14 +24,20 @@ const Piece20 = lazy(() => import("./components/pieces/Piece20/Piece20"));
 const Piece21 = lazy(() => import("./components/pieces/Piece21/Piece21"));
 const Piece22 = lazy(() => import("./components/pieces/Piece22/Piece22"));
 
-// We'll pass orbitEnabled to Piece5 below
+// ─── Mount distance tuning ────────────────────────────────────────────────────
+const MOUNT_LOOKAHEAD = 3000; // load this many px ahead of camera
+const UNMOUNT_DISTANCE = 2500; // unmount this many px behind camera
+// Piece index (0-based) of any WebGL pieces that must never be unmounted
+// once loaded — unmounting destroys their GL context.
+const WEBGL_PIECES = new Set([4]); // Piece5 is index 4
 
-function Piece({ z, cameraZ, children }) {
+// ─── Piece wrapper ────────────────────────────────────────────────────────────
+// everMountedRef: a plain Set ref shared from the parent — tracks which piece
+// indices have ever been mounted so WebGL pieces stay alive once loaded.
+function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
   const distance = z - cameraZ;
 
   let opacity = 1;
-
-  // Fade when camera gets close and passes through
   if (distance < 1 && distance > -2) {
     if (distance <= 0) {
       opacity = Math.max(0, 1 - Math.abs(distance) / 2);
@@ -42,10 +47,20 @@ function Piece({ z, cameraZ, children }) {
     opacity = 0;
   }
 
-  // Only mount children when they're reasonably close to viewport
-  // This creates a loading buffer zone before pieces come into view
-  const mountDistance = 2000; // Mount pieces within 2000px of camera
-  const shouldMount = Math.abs(distance) < mountDistance;
+  const inRange = distance > -UNMOUNT_DISTANCE && distance < MOUNT_LOOKAHEAD;
+
+  // WebGL pieces: once mounted, never unmounted (context would be lost)
+  // All other pieces: normal mount/unmount based on distance
+  const isWebGL = WEBGL_PIECES.has(pieceIndex);
+  if (inRange) everMountedRef.current.add(pieceIndex);
+  const shouldMount = isWebGL
+    ? everMountedRef.current.has(pieceIndex)
+    : inRange;
+
+  // WebGL pieces that are far away: keep in DOM but hide with visibility
+  // so they don't consume GPU fill rate while still preserving context
+  const isHidden =
+    isWebGL && !inRange && everMountedRef.current.has(pieceIndex);
 
   return (
     <div
@@ -63,8 +78,10 @@ function Piece({ z, cameraZ, children }) {
         color: "rgba(255, 255, 255, 0.95)",
         borderRadius: "0px",
         boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-        opacity: opacity,
+        opacity,
         transition: "opacity 0.1s",
+        // visibility:hidden removes from paint but keeps GL context alive
+        visibility: isHidden ? "hidden" : "visible",
       }}
     >
       {shouldMount ? children : null}
@@ -72,22 +89,23 @@ function Piece({ z, cameraZ, children }) {
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function ThreeScroll({ setGoToPiece }) {
   const [cameraZ, setCameraZ] = useState(-200);
   const scrollRef = useRef(-200);
+  const rafRef = useRef(null);
+  const everMountedRef = useRef(new Set()); // plain ref — never triggers renders
+
   const spacing = 1000;
   const numPieces = 22;
   const minZ = -(numPieces - 1) * spacing - 700;
   const maxZ = -200;
-
-  // Piece22 is fully in view when cameraZ is at its position
   const piece22Z = -200 - (numPieces - 1) * spacing;
 
-  // Expose goToPiece to parent via setGoToPiece
+  // Expose goToPiece — identical to original
   useEffect(() => {
     if (!setGoToPiece) return;
     setGoToPiece((pieceIdx) => {
-      // pieceIdx is 1-based
       let z;
       if (pieceIdx === 22) {
         z = piece22Z;
@@ -100,26 +118,34 @@ export default function ThreeScroll({ setGoToPiece }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setGoToPiece, piece22Z, spacing]);
 
-  // (No special logic for Piece5 or Piece22 needed)
-
+  // rAF-batched scroll — only change from original.
+  // Raw delta accumulates in scrollRef; setCameraZ fires at most once per frame.
+  // This prevents 10-20 queued React re-renders per fast scroll tick.
   useEffect(() => {
     document.body.style.overflow = "hidden";
+
+    const flushScroll = () => {
+      setCameraZ(scrollRef.current);
+      rafRef.current = null;
+    };
 
     const onWheel = (e) => {
       e.preventDefault();
       scrollRef.current -= e.deltaY;
       scrollRef.current = Math.max(minZ, Math.min(maxZ, scrollRef.current));
-      setCameraZ(scrollRef.current);
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(flushScroll);
+      }
     };
 
     const onKeyDown = (e) => {
-      if (e.key === "ArrowUp") {
-        scrollRef.current += 50;
-      } else if (e.key === "ArrowDown") {
-        scrollRef.current -= 50;
+      if (e.key === "ArrowUp")
+        scrollRef.current = Math.min(maxZ, scrollRef.current + 50);
+      if (e.key === "ArrowDown")
+        scrollRef.current = Math.max(minZ, scrollRef.current - 50);
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(flushScroll);
       }
-      scrollRef.current = Math.max(minZ, Math.min(maxZ, scrollRef.current));
-      setCameraZ(scrollRef.current);
     };
 
     window.addEventListener("wheel", onWheel, { passive: false });
@@ -128,6 +154,7 @@ export default function ThreeScroll({ setGoToPiece }) {
     return () => {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       document.body.style.overflow = "";
     };
   }, [minZ, maxZ]);
@@ -139,113 +166,223 @@ export default function ThreeScroll({ setGoToPiece }) {
           className={styles.preserve3dWrap}
           style={{ transform: `translateZ(${-cameraZ}px)` }}
         >
-          <Piece key={1} z={-200} cameraZ={cameraZ}>
-            <Suspense fallback={<div></div>}>
+          <Piece
+            z={-200}
+            pieceIndex={0}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece1 />
             </Suspense>
           </Piece>
-          <Piece key={2} z={-200 - 1 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 2...</div>}>
+          <Piece
+            z={-200 - 1 * spacing}
+            pieceIndex={1}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece2 />
             </Suspense>
           </Piece>
-          <Piece key={3} z={-200 - 2 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 3...</div>}>
+          <Piece
+            z={-200 - 2 * spacing}
+            pieceIndex={2}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece3 />
             </Suspense>
           </Piece>
-          <Piece key={4} z={-200 - 3 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 4...</div>}>
+          <Piece
+            z={-200 - 3 * spacing}
+            pieceIndex={3}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece4 />
             </Suspense>
           </Piece>
-          <Piece key={5} z={-200 - 4 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 5...</div>}>
+          <Piece
+            z={-200 - 4 * spacing}
+            pieceIndex={4}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece5 />
             </Suspense>
           </Piece>
-          <Piece key={6} z={-200 - 5 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 6...</div>}>
+          <Piece
+            z={-200 - 5 * spacing}
+            pieceIndex={5}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece6 />
             </Suspense>
           </Piece>
-          <Piece key={7} z={-200 - 6 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 7...</div>}>
+          <Piece
+            z={-200 - 6 * spacing}
+            pieceIndex={6}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece7 />
             </Suspense>
           </Piece>
-          <Piece key={8} z={-200 - 7 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 8...</div>}>
+          <Piece
+            z={-200 - 7 * spacing}
+            pieceIndex={7}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece8 />
             </Suspense>
           </Piece>
-          <Piece key={9} z={-200 - 8 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 9...</div>}>
+          <Piece
+            z={-200 - 8 * spacing}
+            pieceIndex={8}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece9 />
             </Suspense>
           </Piece>
-          <Piece key={10} z={-200 - 9 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 10...</div>}>
+          <Piece
+            z={-200 - 9 * spacing}
+            pieceIndex={9}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece10 />
             </Suspense>
           </Piece>
-          <Piece key={11} z={-200 - 10 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 11...</div>}>
+          <Piece
+            z={-200 - 10 * spacing}
+            pieceIndex={10}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece11 />
             </Suspense>
           </Piece>
-          <Piece key={12} z={-200 - 11 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 12...</div>}>
+          <Piece
+            z={-200 - 11 * spacing}
+            pieceIndex={11}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece12 />
             </Suspense>
           </Piece>
-          <Piece key={13} z={-200 - 12 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 13...</div>}>
+          <Piece
+            z={-200 - 12 * spacing}
+            pieceIndex={12}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece13 />
             </Suspense>
           </Piece>
-          <Piece key={14} z={-200 - 13 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 14...</div>}>
+          <Piece
+            z={-200 - 13 * spacing}
+            pieceIndex={13}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece14 />
             </Suspense>
           </Piece>
-          <Piece key={15} z={-200 - 14 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 15...</div>}>
+          <Piece
+            z={-200 - 14 * spacing}
+            pieceIndex={14}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece15 />
             </Suspense>
           </Piece>
-          <Piece key={16} z={-200 - 15 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 16...</div>}>
+          <Piece
+            z={-200 - 15 * spacing}
+            pieceIndex={15}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece16 />
             </Suspense>
           </Piece>
-          <Piece key={17} z={-200 - 16 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 17...</div>}>
+          <Piece
+            z={-200 - 16 * spacing}
+            pieceIndex={16}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece17 />
             </Suspense>
           </Piece>
-          <Piece key={18} z={-200 - 17 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 18...</div>}>
+          <Piece
+            z={-200 - 17 * spacing}
+            pieceIndex={17}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece18 />
             </Suspense>
           </Piece>
-          <Piece key={19} z={-200 - 18 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 19...</div>}>
+          <Piece
+            z={-200 - 18 * spacing}
+            pieceIndex={18}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece19 />
             </Suspense>
           </Piece>
-          <Piece key={20} z={-200 - 19 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 20...</div>}>
+          <Piece
+            z={-200 - 19 * spacing}
+            pieceIndex={19}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece20 />
             </Suspense>
           </Piece>
-          <Piece key={21} z={-200 - 20 * spacing} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 21...</div>}>
+          <Piece
+            z={-200 - 20 * spacing}
+            pieceIndex={20}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece21 />
             </Suspense>
           </Piece>
-          <Piece key={22} z={piece22Z} cameraZ={cameraZ}>
-            <Suspense fallback={<div>Loading Piece 22...</div>}>
+          <Piece
+            z={piece22Z}
+            pieceIndex={21}
+            everMountedRef={everMountedRef}
+            cameraZ={cameraZ}
+          >
+            <Suspense fallback={<div />}>
               <Piece22 />
             </Suspense>
           </Piece>

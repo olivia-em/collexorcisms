@@ -5,22 +5,21 @@
   font-style: normal;
 }
 
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
 .piece7Container {
   display: flex;
   flex-direction: column;
   width: 90%;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100%;
   gap: 2rem;
+  /* overflow hidden so scattered words don't cause scrollbars during animation */
+  overflow: hidden;
 }
 
-.h2Title {
-  font-size: 1rem;
-  color: cyan;
-  margin-bottom: 0rem;
-  font-family: "Jacquard12", monospace;
-}
+/* ── Poem ────────────────────────────────────────────────────────────────── */
 
 .poemText {
   font-size: 0.5rem;
@@ -30,7 +29,36 @@
   line-height: 1.7;
   margin: 0;
   padding: 0;
+  color: #c8c8c8;
+  /* clip scattered words to the poem area so they don't escape completely */
+  position: relative;
 }
+
+.poemLine {
+  display: block;
+  white-space: normal; /* allow natural line wrapping */
+  word-spacing: 0.1em;
+}
+
+/* space between stanza 1 and stanza 2 */
+.stanzaBreak {
+  height: 1.4em;
+  display: block;
+}
+
+/* ── Word ────────────────────────────────────────────────────────────────── */
+
+.word {
+  /* display:inline-block set inline via style prop (required for transform) */
+  white-space: pre; /* preserve the trailing space we render inside */
+  will-change: transform, opacity, color, font-family;
+  /* default transition for glitch settle */
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+/* ── Button ──────────────────────────────────────────────────────────────── */
 
 .generateButton {
   font-family: "Jacquard12", monospace;
@@ -41,18 +69,49 @@
   border: none;
   outline: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+  user-select: none;
+  position: relative;
+  z-index: 2;
 }
 
 .generateButton:hover {
-  /* background-color: cyan; */
-  transition: 0.5s ease-out;
   color: red;
   text-shadow: 0 0 10px cyan;
-  /* box-shadow: ; */
+  transition: 0.5s ease-out;
 }
 
 .generateButton:active {
   transform: scale(0.95);
-  outline: none;
+}
+
+.generateButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* button flickers during glitch transition */
+.buttonGlitching {
+  animation: buttonFlicker 110ms step-end infinite;
+}
+
+@keyframes buttonFlicker {
+  0% {
+    color: cyan;
+    text-shadow: 0 0 8px cyan;
+  }
+  35% {
+    color: #e05555;
+    text-shadow: 0 0 8px #e05555;
+  }
+  70% {
+    color: #c8c8c8;
+    text-shadow: none;
+  }
+  100% {
+    color: cyan;
+    text-shadow: 0 0 8px cyan;
+  }
 }

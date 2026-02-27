@@ -100,10 +100,10 @@ const Piece18 = () => {
   useEffect(() => {
     // Cycle through random monster images
     const showTwoRandomMonsters = () => {
-      let idx1 = Math.floor(Math.random() * 21);
+      let idx1 = Math.floor(Math.random() * 19);
       let idx2;
       do {
-        idx2 = Math.floor(Math.random() * 21);
+        idx2 = Math.floor(Math.random() * 19);
       } while (idx2 === idx1);
       setVisibleMonsters([idx1, idx2]);
     };
@@ -128,10 +128,10 @@ const Piece18 = () => {
     "monster13.PNG",
     "monster14.jpg",
     "monster15.png",
-    "monster17.jpg",
+    "monster16.jpg",
+    "monster17.JPG",
+    "monster18.JPG",
     "monster19.JPG",
-    "monster20.JPG",
-    "monster21.JPG",
   ];
 
   return (

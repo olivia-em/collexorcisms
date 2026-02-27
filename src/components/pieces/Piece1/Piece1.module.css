@@ -1,22 +1,11 @@
-.poetryLink {
-  color: #747bff;
-  text-decoration: none;
-  cursor: pointer;
-  font-size: 1rem;
-  text-shadow: cyan 0px 0px 2px;
-}
-
-.poetryLink:hover {
-  transition: 0.5s ease-out;
-  color: red;
-}
-
 @font-face {
   font-family: "Jacquard12";
   src: url("/assets/Jacquard12-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 
 .piece1Container {
   display: flex;
@@ -29,62 +18,132 @@
   z-index: 0;
 }
 
-.terminalBox {
-  background: rgba(0, 255, 255, 1);
-  background-blend-mode: difference;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  border-radius: 8px;
-  box-shadow: 0 0 24px #000a;
-  width: 100%;
-  height: 100%;
-  font-family: "Fira Mono", "Menlo", "Monaco", "Consolas", monospace;
-  color: #e0e0e0;
-  font-size: 1.1rem;
-  position: relative;
-  z-index: 0;
-  pointer-events: auto;
-  user-select: text;
-}
+/* ── Folder button ───────────────────────────────────────────────────────── */
 
-.terminalWindow {
-  padding: 0.5em;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: auto;
-  user-select: text;
-}
-
-.terminalWindow::-webkit-scrollbar {
-  width: 8px;
-}
-
-.terminalWindow::-webkit-scrollbar-track {
-  background: #222;
+.folderBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 12px;
   border-radius: 4px;
+  /* reset any browser button styles */
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
 }
 
-.terminalLine {
-  white-space: pre-wrap;
-  line-height: 1.7;
-  margin-bottom: 0.2em;
+.folderIcon {
   display: block;
-  pointer-events: auto;
-  user-select: text;
-  color: white;
-  mix-blend-mode: difference;
+  line-height: 0;
+  /* default: cyan, no glow */
+  filter: drop-shadow(0 0 0px #00ffff);
+  transition: filter 0.25s ease;
 }
 
-.prompt {
-  color: white;
-  mix-blend-mode: difference;
-  font-weight: bold;
-  margin-right: 0.5em;
-  font-family: inherit;
+.folderSvg {
+  width: 72px;
+  height: 58px;
+  display: block;
 }
 
-.sectionBlock {
-  margin-bottom: 2em;
+/* folder body fill + stroke */
+.folderBody {
+  fill: #00ffff;
+  stroke: #00cccc;
+  stroke-width: 1.5;
+  transition:
+    fill 0.25s ease,
+    stroke 0.25s ease;
+}
+
+/* hover: body turns red, icon glows cyan */
+.folderBtn:hover .folderBody {
+  fill: #e05555;
+  stroke: #ff3333;
+}
+
+.folderBtn:hover .folderIcon {
+  filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 20px #00ffff44);
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────── */
+
+.folderLabel {
+  font-family: "Jacquard12", serif;
+  font-size: 1.1rem;
+  color: #00ffff;
+  letter-spacing: 1px;
+  /* strikethrough */
+  text-decoration: line-through;
+  text-decoration-color: #00ffff99;
+  text-decoration-thickness: 1px;
+  transition:
+    color 0.25s ease,
+    text-shadow 0.25s ease;
+  user-select: none;
+}
+
+.folderBtn:hover .folderLabel {
+  color: #e05555;
+  text-shadow: 0 0 8px #00ffff;
+  text-decoration-color: #e0555599;
+}
+
+/* ── Expanded image view ─────────────────────────────────────────────────── */
+
+.imageView {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  animation: openFolder 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.expandedImg {
+  max-width: min(90vw, 520px);
+  max-height: min(80vh, 520px);
+  object-fit: contain;
+  border: 1px solid #00ffff44;
+  box-shadow: 0 0 24px #00ffff33;
+  display: block;
+}
+
+.closeHint {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.7rem;
+  color: #444;
+  letter-spacing: 1px;
+  user-select: none;
+}
+
+@keyframes openFolder {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Legacy styles kept in case anything else imports them ───────────────── */
+
+.poetryLink {
+  color: #747bff;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 1rem;
+  text-shadow: cyan 0px 0px 2px;
+}
+
+.poetryLink:hover {
+  transition: 0.5s ease-out;
+  color: red;
 }
