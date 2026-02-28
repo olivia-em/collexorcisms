@@ -1,12 +1,7 @@
 import React from "react";
 import styles from "./Piece3.module.css";
-import useTrackPiece from "../../../useTrackPiece";
-import { useGame } from "../../../GameContext";
 
 const Piece3 = () => {
-  useTrackPiece("lack_of_flight");
-  const { trackLofFile } = useGame();
-
   const poem = `lack of flight   
 
 I sit atop the stairs
@@ -58,16 +53,19 @@ white carpet stains,
 
   const replaceLettersWithEmojis = (text) => {
     return text.split("").map((char) => {
-      if (/\s/.test(char)) return char;
-      return emojis[Math.floor(Math.random() * emojis.length)];
+      // Keep whitespace and line breaks
+      if (/\s/.test(char)) {
+        return char;
+      }
+      // Replace letters and punctuation with random emoji
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+      return randomEmoji;
     });
   };
 
   const transformedPoem = replaceLettersWithEmojis(poem);
 
   const handleBirdClick = (filename) => {
-    if (!filename) return;
-    trackLofFile(filename); // track which files have been opened
     const link = document.createElement("a");
     link.href = `${import.meta.env.BASE_URL}assets/piece3/${filename}`;
     link.download = filename;
@@ -89,7 +87,9 @@ white carpet stains,
           <div
             key={index}
             className={styles.bird}
-            onClick={() => handleBirdClick(bird.downloadFile)}
+            onClick={() =>
+              bird.downloadFile && handleBirdClick(bird.downloadFile)
+            }
           >
             {bird.emoji}
           </div>

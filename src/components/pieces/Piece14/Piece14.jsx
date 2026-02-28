@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Piece14.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 const BLEND_MODES = [
   "difference",
@@ -20,7 +21,7 @@ const BLEND_MODES = [
 const Piece14 = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [blendModeIndex, setBlendModeIndex] = useState(0);
-
+  const { markInteracted } = useTrackPiece("s_curves"); // interaction: hover
   useEffect(() => {
     if (!isHovering) return;
 
@@ -44,7 +45,10 @@ const Piece14 = () => {
         className={styles.Montage}
         src="/assets/piece14/IMG_2363.jpg"
         style={{ mixBlendMode: blendMode }}
-        onMouseEnter={() => setIsHovering(true)}
+        onMouseEnter={() => {
+          setIsHovering(true);
+          markInteracted();
+        }}
         onMouseLeave={() => {
           setIsHovering(false);
           setBlendModeIndex(0);

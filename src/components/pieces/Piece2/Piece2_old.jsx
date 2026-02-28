@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import styles from "./Piece2.module.css";
-import useTrackPiece from "../../../useTrackPiece";
-import { useGame } from "../../../GameContext";
 
 const poetryPages = {
   index: {
@@ -100,17 +98,9 @@ const poetryPages = {
 
 function Piece2() {
   const [page, setPage] = useState("index");
-  useTrackPiece("129"); // marks visited on mount
-  const { trackPage129 } = useGame();
 
   const handleStarClick = (pageId) => {
     setPage(pageId);
-    trackPage129(pageId); // track each page visit — completes at all 5
-  };
-
-  const handleLinkClick = (pageId) => {
-    setPage(pageId);
-    trackPage129(pageId);
   };
 
   if (page === "index") {
@@ -164,7 +154,7 @@ function Piece2() {
                         className={styles.poetryLink}
                         onClick={(e) => {
                           e.preventDefault();
-                          handleLinkClick(part.link);
+                          setPage(part.link);
                         }}
                       >
                         {part.label}

@@ -1,14 +1,8 @@
 import React from "react";
 import styles from "./Piece4.module.css";
-import useTrackPiece from "../../../useTrackPiece";
-import { useGame } from "../../../GameContext";
 
 const Piece4 = () => {
-  useTrackPiece("my_familiar");
-  const { trackMfFile } = useGame();
-
   const handleImageClick = (filename) => {
-    trackMfFile(filename); // track which files have been opened
     const link = document.createElement("a");
     link.href = `${import.meta.env.BASE_URL}assets/piece4/${filename}`;
     link.download = filename;

@@ -1,18 +1,5 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  Suspense,
-  lazy,
-  createContext,
-  useContext,
-} from "react";
+import React, { useRef, useEffect, useState, Suspense, lazy } from "react";
 import styles from "./CSSScroll.module.css";
-
-// ─── Visibility context ───────────────────────────────────────────────────────
-// Pieces consume this to know whether they are currently "at the camera"
-// (opacity === 1). useTrackPiece gates markVisited on this.
-export const PieceVisibilityContext = createContext(false);
 
 const Piece1 = lazy(() => import("./components/pieces/Piece1/Piece1"));
 const Piece2 = lazy(() => import("./components/pieces/Piece2/Piece2"));
@@ -62,10 +49,6 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
 
   const inRange = distance > -UNMOUNT_DISTANCE && distance < MOUNT_LOOKAHEAD;
 
-  // A piece is "at camera" when it's close enough to be fully opaque
-  // This is what gates useTrackPiece markVisited
-  const isAtCamera = distance > -500 && distance < 500;
-
   // WebGL pieces: once mounted, never unmounted (context would be lost)
   // All other pieces: normal mount/unmount based on distance
   const isWebGL = WEBGL_PIECES.has(pieceIndex);
@@ -80,31 +63,29 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
     isWebGL && !inRange && everMountedRef.current.has(pieceIndex);
 
   return (
-    <PieceVisibilityContext.Provider value={isAtCamera}>
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          width: "50vw",
-          height: "50vh",
-          transform: `translate(-50%, -50%) translateZ(${z}px)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#000",
-          color: "rgba(255, 255, 255, 0.95)",
-          borderRadius: "0px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          opacity,
-          transition: "opacity 0.1s",
-          // visibility:hidden removes from paint but keeps GL context alive
-          visibility: isHidden ? "hidden" : "visible",
-        }}
-      >
-        {shouldMount ? children : null}
-      </div>
-    </PieceVisibilityContext.Provider>
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        width: "50vw",
+        height: "50vh",
+        transform: `translate(-50%, -50%) translateZ(${z}px)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#000",
+        color: "rgba(255, 255, 255, 0.95)",
+        borderRadius: "0px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        opacity,
+        transition: "opacity 0.1s",
+        // visibility:hidden removes from paint but keeps GL context alive
+        visibility: isHidden ? "hidden" : "visible",
+      }}
+    >
+      {shouldMount ? children : null}
+    </div>
   );
 }
 

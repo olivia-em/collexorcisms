@@ -1,30 +1,30 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./App.css";
 import ThreeScroll from "./CSSScroll";
 import BackgroundCollage from "./BackgroundCollage";
-import Search from "./Search";
+import Terminal from "./components/terminal/Terminal";
 import Onboarding from "./components/onboarding/Onboarding";
 import { CameraContext } from "./CameraContext";
+import { GameProvider, useGame } from "./GameContext";
 
-function App() {
-  // We'll use a ref to store the goToPiece function from ThreeScroll
-  const goToPieceRef = useRef(null);
+function AppInner() {
+  const goToPieceRef        = useRef(null);
+  const { startTimer }      = useGame();
+  const [onboardingDone, setOnboardingDone] = useState(false);
+
+  const handleOnboardingComplete = () => {
+    startTimer();
+    setOnboardingDone(true);
+  };
 
   return (
     <CameraContext.Provider
-      value={{
-        goToPiece: (idx) => goToPieceRef.current && goToPieceRef.current(idx),
-      }}
+      value={{ goToPiece: (idx) => goToPieceRef.current && goToPieceRef.current(idx) }}
     >
-      <Onboarding />
-      <div
-        style={{
-          height: "100vh",
-          width: "100vw",
-          overflow: "hidden",
-        }}
-      >
-        <Search />
+      <Onboarding onComplete={handleOnboardingComplete} />
+      <div style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
+        {/* Terminal hidden (returns null) until onboarding is complete */}
+        <Terminal onboardingDone={onboardingDone} />
         <ThreeScroll setGoToPiece={(fn) => (goToPieceRef.current = fn)} />
         <BackgroundCollage />
       </div>
@@ -32,4 +32,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <GameProvider>
+      <AppInner />
+    </GameProvider>
+  );
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import p5 from "p5";
 import styles from "./Piece6.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 const GROUPS = [
   { min: 10, max: 99 },
@@ -42,6 +43,7 @@ function groupWords(tokens) {
 const Piece6 = () => {
   const [groups, setGroups] = useState([]);
   const canvasRef = useRef();
+  useTrackPiece("cursedVisions");
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}assets/iliad.txt`)

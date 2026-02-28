@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./Piece5.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 const Piece5 = () => {
   const [question, setQuestion] = useState("");
@@ -7,7 +8,7 @@ const Piece5 = () => {
   const [memory, setMemory] = useState("");
   const [outro, setOutro] = useState("");
   const [hallucination, setHallucination] = useState("");
-
+  const { markInteracted } = useTrackPiece("cass_ra");
   const questionSource = {
     origin:
       "#question#<br>recycle old words<br>no longer to read <br>you between lines",
@@ -136,6 +137,7 @@ const Piece5 = () => {
             onClick={(e) => {
               e.preventDefault();
               handleDownload();
+              markInteracted();
             }}
             className={styles.ampersand}
           >

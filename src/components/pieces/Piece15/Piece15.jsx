@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styles from "./Piece15.module.css";
 import { diffLines } from "../Piece8/diffLines.js";
 import AnimatedLine from "../Piece8/AnimatedLine.jsx";
+import useTrackPiece from "../../../useTrackPiece";
 
 const Piece15 = () => {
   const [allVersions, setAllVersions] = useState([]);
@@ -9,7 +10,7 @@ const Piece15 = () => {
   const [operations, setOperations] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
-
+  const { markInteracted } = useTrackPiece("31");
   // Load the three text files on mount
   useEffect(() => {
     const loadFiles = async () => {
@@ -105,6 +106,7 @@ const Piece15 = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.inlineLink}
+                      onClick={markInteracted}
                     >
                       <AnimatedLine
                         operation={op}
@@ -140,6 +142,7 @@ const Piece15 = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.inlineLink}
+                      onClick={markInteracted}
                     >
                       <AnimatedLine
                         operation={op}

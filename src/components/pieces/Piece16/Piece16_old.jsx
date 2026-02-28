@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import BacksideSphere from "./Spheres/BacksideSphere";
@@ -12,67 +12,25 @@ import {
   textConfig,
 } from "./config/sceneConfig";
 import styles from "./Piece16.module.css";
-import useTrackPiece from "../../../useTrackPiece";
-import { useGame } from "../../../GameContext";
-
-// RotationTracker sits inside the Canvas so it can access OrbitControls events
-function RotationTracker({ onDelta }) {
-  const prevAzimuth = useRef(null);
-
-  const handleChange = (e) => {
-    // OrbitControls passes its own instance as the event target
-    const controls = e.target;
-    const azimuth = controls.getAzimuthalAngle(); // radians, wraps -π to π
-
-    if (prevAzimuth.current !== null) {
-      let delta = azimuth - prevAzimuth.current;
-      // Handle wrap-around: if jump > π, user crossed the ±π boundary
-      if (delta > Math.PI) delta -= 2 * Math.PI;
-      if (delta < -Math.PI) delta += 2 * Math.PI;
-      onDelta(Math.abs(delta));
-    }
-    prevAzimuth.current = azimuth;
-  };
-
-  return (
-    <OrbitControls
-      enableDamping
-      dampingFactor={0.05}
-      enableZoom={false}
-      enablePan={false}
-      onChange={handleChange}
-    />
-  );
-}
 
 export default function Piece16({ ...canvasProps }) {
   const [showCanvas, setShowCanvas] = useState(false);
-  const { markCompleted } = useTrackPiece("shedding_light");
-  const { trackShedLightRotation, state } = useGame();
-  const completedRef = useRef(state.completedPieces?.shedding_light ?? false);
 
   useEffect(() => {
-    return () => setShowCanvas(false);
+    // Cleanup on unmount - reset button state
+    return () => {
+      setShowCanvas(false);
+    };
   }, []);
 
-  const handleRotationDelta = (delta) => {
-    if (completedRef.current) return; // already done, stop tracking
-    trackShedLightRotation(delta);
-    // Check if cumulative rotation has now reached 2π
-    // GameContext handles the actual completion flag internally,
-    // but we mirror it here for the ref so we stop calling trackShed
-    if (state.completedPieces?.shedding_light) {
-      completedRef.current = true;
-    }
+  const handleButtonClick = () => {
+    setShowCanvas(true);
   };
 
   return (
     <div className={styles.piece16Container}>
       {!showCanvas && (
-        <button
-          onClick={() => setShowCanvas(true)}
-          className={styles.piece16Button}
-        >
+        <button onClick={handleButtonClick} className={styles.piece16Button}>
           light <i>light</i>{" "}
           <strong>
             <i>light</i>
@@ -82,7 +40,7 @@ export default function Piece16({ ...canvasProps }) {
       {showCanvas && (
         <Canvas
           camera={{
-            position: sceneConfig.camera.position,
+            position: sceneConfig.camera.position, // Start further away
             fov: sceneConfig.camera.fov,
           }}
           shadows
@@ -96,11 +54,13 @@ export default function Piece16({ ...canvasProps }) {
           }}
           {...canvasProps}
         >
+          {/* ZScrollControl removed: camera zoom is locked */}
           <ambientLight
             color={lightConfig.ambient.color}
             intensity={lightConfig.ambient.intensity}
           />
           <group rotation={[0, sceneConfig.rotation, 0]}>
+            {/* Spheres */}
             <BacksideSphere
               radius={sphereConfig.inner.radius}
               opacity={sphereConfig.inner.opacity}
@@ -111,6 +71,8 @@ export default function Piece16({ ...canvasProps }) {
               opacity={sphereConfig.outer.opacity}
               color={sphereConfig.outer.color}
             />
+
+            {/* Text Layers */}
             <Suspense fallback={null}>
               <TextLayer
                 text={sceneConfig.text.inner}
@@ -137,6 +99,8 @@ export default function Piece16({ ...canvasProps }) {
               />
             </Suspense>
           </group>
+
+          {/* Spotlights */}
           <SpotlightGroup
             colors={lightConfig.inner.colors}
             radius={lightConfig.inner.radius}
@@ -161,8 +125,13 @@ export default function Piece16({ ...canvasProps }) {
             showHelpers={false}
             sceneRotation={sceneConfig.rotation}
           />
-          {/* RotationTracker replaces the plain OrbitControls — same props, adds onChange */}
-          <RotationTracker onDelta={handleRotationDelta} />
+
+          <OrbitControls
+            enableDamping
+            dampingFactor={0.05}
+            enableZoom={false}
+            enablePan={false}
+          />
         </Canvas>
       )}
     </div>

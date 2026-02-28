@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styles from "./Piece12.module.css";
 import { diffLines } from "../Piece8/diffLines.js";
 import AnimatedLine from "../Piece8/AnimatedLine.jsx";
+import useTrackPiece from "../../../useTrackPiece";
 
 const Piece12 = () => {
   const [allVersions, setAllVersions] = useState([]);
@@ -9,7 +10,7 @@ const Piece12 = () => {
   const [operations, setOperations] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
-
+  useTrackPiece("parasite"); // visit-only
   // Load the two text files on mount
   useEffect(() => {
     const loadFiles = async () => {

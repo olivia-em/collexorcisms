@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import styles from "./Piece18.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 const Piece18 = () => {
   const [showOverlay, setShowOverlay] = useState(true);
@@ -8,7 +9,7 @@ const Piece18 = () => {
   const [activeTooltip, setActiveTooltip] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const quotesRef = useRef(null);
-
+  const { markInteracted } = useTrackPiece("i_am_malicious");
   const tooltips = {
     section1: (
       <>
@@ -46,6 +47,7 @@ const Piece18 = () => {
   };
 
   const handleMouseEnter = (e, section) => {
+    markInteracted();
     setTooltipPosition({
       x: e.clientX,
       y: e.clientY,

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Piece9.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 const Piece9 = () => {
   const spokenWordRef = useRef(null);
@@ -7,10 +8,11 @@ const Piece9 = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [spokenWordOpacity, setSpokenWordOpacity] = useState(0);
   const [montageOpacity, setMontageOpacity] = useState(1);
-
+  const { markInteracted } = useTrackPiece("silhouettes");
   const handlePlay = async () => {
     try {
       setIsPlaying(true);
+      markInteracted();
       if (spokenWordRef.current) {
         await spokenWordRef.current.play();
       }

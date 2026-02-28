@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import styles from "./Piece1.module.css";
 import img1Small from "/assets/piece1/IMG_1836_small.JPG";
+import useTrackPiece from "../../../useTrackPiece";
 
 function Piece1() {
   const [expanded, setExpanded] = useState(false);
+  const { markInteracted } = useTrackPiece("justBones");
 
   return (
     <div className={styles.piece1Container}>
@@ -15,7 +17,10 @@ function Piece1() {
       ) : (
         <button
           className={styles.folderBtn}
-          onClick={() => setExpanded(true)}
+          onClick={() => {
+            setExpanded(true);
+            markInteracted();
+          }}
           aria-label="Open justBones"
         >
           {/* Folder icon built from CSS — no external icon dependency */}

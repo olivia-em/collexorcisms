@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 // No axios needed, all in-browser
 import styles from "./Piece11.module.css";
+import useTrackPiece from "../../../useTrackPiece";
 
 function SecretForm({
   onSubmit,
@@ -60,12 +61,13 @@ const Piece11 = () => {
   const [submitted, setSubmitted] = useState(false);
   const [poem, setPoem] = useState(null);
   const [error, setError] = useState("");
-
+  const { markInteracted } = useTrackPiece("secrets");
   // No server fetch, just show the last submitted secret
   // Set poem directly in handleSubmit
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    markInteracted();
     setLoading(true);
     setError("");
     if (file) {

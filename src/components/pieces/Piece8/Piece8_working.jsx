@@ -5,14 +5,13 @@ import AnimatedLine from "./AnimatedLine.jsx";
 import useTrackPiece from "../../../useTrackPiece";
 
 const Piece8 = () => {
-  const { markCompleted, markInteracted } = useTrackPiece("objects_in_eleven");
+  const { markCompleted } = useTrackPiece("objects_in_eleven");
 
   const [allVersions, setAllVersions] = useState([]);
   const [currentVersion, setCurrentVersion] = useState(-1);
   const [operations, setOperations] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
-  const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
     const loadFiles = async () => {
@@ -39,19 +38,13 @@ const Piece8 = () => {
     const newLines = allVersions[nextVersion];
     if (!newLines) return;
 
-    // First click — mark interacted so non-Olivia obits (Nick, AJ, Michael) unlock
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      markInteracted();
-    }
-
     const diff = diffLines(oldLines, newLines);
     setOperations(diff);
     setCurrentVersion(nextVersion);
     setIsAnimating(true);
     setCompletedLines(new Set());
 
-    // Final version (index 10 = 11th) — mark fully completed for Olivia's obit
+    // Mark complete when the user reaches the final version (index 10 = 11th)
     if (nextVersion === 10) {
       markCompleted();
     }
