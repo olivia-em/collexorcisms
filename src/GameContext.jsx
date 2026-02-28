@@ -211,7 +211,7 @@ export const NAME_ERRORS = [
 
 // ─── Timer config ─────────────────────────────────────────────────────────────
 // DEV: 30 seconds. To restore production: change TIMER_SECONDS to 11 * 60
-const TIMER_SECONDS = 30; // ← swap to `11 * 60` for production
+const TIMER_SECONDS = 11 * 60; // ← swap to `11 * 60` for production [30s for dev]
 
 export function formatRemaining(secondsLeft) {
   const s = Math.max(0, Math.ceil(secondsLeft));
