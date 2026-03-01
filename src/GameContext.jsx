@@ -555,15 +555,21 @@ export function GameProvider({ children }) {
   }, []);
 
   const isTitleComplete = useCallback((slug) => {
-    // A title is "crossed out" when all non-Olivia people for that piece have obits unlocked
-    const people = Object.entries(PERSON_PIECES)
-      .filter(([, pieces]) => pieces.includes(slug))
-      .map(([name]) => name)
-      .filter((name) => name !== "Olivia");
     const s = getSnapshot();
-    // Olivia-only pieces (no other people) never cross out until Olivia unlocks
-    if (people.length === 0) return !!s.obituariesUnlocked["Olivia"];
-    return people.every((name) => s.obituariesUnlocked[name]);
+
+    const nonOliviaPeople = Object.entries(PERSON_PIECES)
+      .filter(([name, pieces]) => name !== "Olivia" && pieces.includes(slug))
+      .map(([name]) => name);
+
+    // 🩸 Olivia-only pieces:
+    // Cross out as soon as the piece itself is completed.
+    if (nonOliviaPeople.length === 0) {
+      return !!s.completedPieces[slug];
+    }
+
+    // 🪦 Shared pieces:
+    // Cross out when all non-Olivia obits are unlocked.
+    return nonOliviaPeople.every((name) => s.obituariesUnlocked[name]);
   }, []);
 
   // ── Obit error tracking ───────────────────────────────────────────────────
