@@ -86,12 +86,8 @@ const Piece5 = () => {
   };
 
   const handleDownload = () => {
-    const link = document.createElement("a");
-    link.href = `${import.meta.env.BASE_URL}assets/piece5/cass_ra.txt`;
-    link.download = "cass_ra.txt";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = `${import.meta.env.BASE_URL}assets/piece5/cass_ra.txt`;
+    window.open(url, "_blank");
   };
 
   useEffect(() => {

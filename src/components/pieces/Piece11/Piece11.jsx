@@ -1,151 +1,82 @@
-import React, { useState, useEffect } from "react";
-// No axios needed, all in-browser
+import React, { useState, useRef } from "react";
 import styles from "./Piece11.module.css";
 import useTrackPiece from "../../../useTrackPiece";
 
-function SecretForm({
-  onSubmit,
-  loading,
-  secret,
-  setSecret,
-  preposition,
-  setPreposition,
-  file,
-  setFile,
-}) {
+function SecretRow({ rowIndex }) {
+  const [preposition, setPreposition] = useState("with");
+  const [cursorPos, setCursorPos] = useState(0);
+  const inputRef = useRef(null);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      setCursorPos(Math.max(0, cursorPos - 1));
+    } else if (e.key.length === 1) {
+      // Only advance for single character keys, not special keys
+      e.preventDefault();
+      setCursorPos(cursorPos + 1);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setCursorPos(0);
+  };
+
+  const handleInputChange = (e) => {
+    // Prevent any actual input
+    e.target.value = "";
+  };
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className={styles.piece11Form}
-      encType="multipart/form-data"
-    >
-      <label className={styles.piece11Label}>
-        Secrets
-        <select
-          value={preposition}
-          onChange={(e) => setPreposition(e.target.value)}
-          className={styles.piece11Select}
-        >
-          <option value="with">with</option>
-          <option value="for">for</option>
-          <option value="from">from</option>
-        </select>
-        &nbsp;you..
-      </label>
-      <input
-        type="text"
-        placeholder="?*/*^%#%$#@!$^&()(&%$@#$%^&?:&^%%$&^*&^$&*^%$^%"
-        value={secret}
-        onChange={(e) => setSecret(e.target.value)}
-        required
-        className={styles.piece11Input}
-      />
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setFile(e.target.files[0])}
-        className={styles.piece11File}
-      />
-      <button type="submit" disabled={loading} className={styles.piece11Button}>
-        {loading ? "Submitting..." : "shh..."}
+    <div className={styles.secretRow}>
+      <span className={styles.secretLabel}>secrets</span>
+      <select
+        value={preposition}
+        onChange={(e) => setPreposition(e.target.value)}
+        className={styles.prepositionSelect}
+      >
+        <option value="with">with</option>
+        <option value="for">for</option>
+        <option value="from">from</option>
+      </select>
+      <span className={styles.youLabel}>you..</span>
+      <div className={styles.inputWrapper}>
+        <input
+          ref={inputRef}
+          type="text"
+          className={styles.secretInput}
+          onKeyDown={handleKeyDown}
+          onChange={handleInputChange}
+          value=""
+          style={{
+            backgroundSize: `${cursorPos * 8}px 100%`,
+          }}
+        />
+        <span className={styles.cursorIndicator}>{cursorPos}</span>
+      </div>
+      <span className={styles.shhLabel}>shhh</span>
+      <button onClick={handleSubmit} className={styles.submitButton}>
+        shh...
       </button>
-    </form>
+    </div>
   );
 }
 
 const Piece11 = () => {
-  const [secret, setSecret] = useState("");
-  const [preposition, setPreposition] = useState("with");
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [poem, setPoem] = useState(null);
-  const [error, setError] = useState("");
   const { markInteracted } = useTrackPiece("secrets");
-  // No server fetch, just show the last submitted secret
-  // Set poem directly in handleSubmit
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  React.useEffect(() => {
     markInteracted();
-    setLoading(true);
-    setError("");
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPoem({
-          secret,
-          preposition,
-          image: event.target.result,
-        });
-        setSubmitted(true);
-        setLoading(false);
-        setSecret("");
-        setFile(null);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setPoem({ secret, preposition, image: null });
-      setSubmitted(true);
-      setLoading(false);
-      setSecret("");
-      setFile(null);
-    }
-  };
-
-  if (submitted && poem) {
-    return (
-      <div
-        className={styles.piece11Poem}
-        style={{
-          backgroundImage: poem.image ? `url(${poem.image})` : undefined,
-        }}
-      >
-        <div className={styles.piece11PoemContent}>
-          <p>
-            we've kept a secret <em>{poem.preposition}</em> each other
-          </p>
-          <p>
-            you've kept a secret <em>{poem.preposition}</em> me
-            <br />
-            you hold it, i know you do.
-            <br />
-            we'll never speak again, not like we used to.
-          </p>
-          <p>
-            i've kept a secret <em>{poem.preposition}</em> you.
-            <br />
-            nothing said out loud.
-            <br />
-            i'll tell you now. because,
-            <br />
-            we'll never speak again, not like we used to.
-          </p>
-          <p style={{ fontStyle: "italic", margin: "20px 0" }}>{poem.secret}</p>
-          <p>
-            you can take it, this thing i've shared…
-            <br />
-            that, the love, and the care.
-          </p>
-        </div>
-        {/* Back to form button removed: users cannot submit again during a session */}
-      </div>
-    );
-  }
+  }, [markInteracted]);
 
   return (
     <div className={styles.piece11Container}>
-      <SecretForm
-        onSubmit={handleSubmit}
-        loading={loading}
-        secret={secret}
-        setSecret={setSecret}
-        preposition={preposition}
-        setPreposition={setPreposition}
-        file={file}
-        setFile={setFile}
-      />
-      {error && <div className={styles.piece11Error}>{error}</div>}
+      <div className={styles.secretsForm}>
+        <SecretRow rowIndex={0} />
+        <SecretRow rowIndex={1} />
+        <SecretRow rowIndex={2} />
+      </div>
     </div>
   );
 };

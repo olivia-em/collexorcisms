@@ -7,108 +7,104 @@
 
 .piece11Container {
   padding: 40px;
-  margin: 0 0;
-  width: 90%;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.piece11Form {
-  /* margin-bottom: 32px; */
+.secretsForm {
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  max-width: 1000px;
 }
 
-.piece11Label {
-  display: block;
-  margin-bottom: 20px;
-  align-self: center;
+.secretRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.piece11Select {
-  margin-left: 8px;
+.secretLabel {
+  font-family: "Jacquard12", monospace;
+  font-size: 1.5rem;
+  white-space: nowrap;
 }
 
-.piece11Input {
-  width: 50%;
+.prepositionSelect {
+  padding: 4px 8px;
+  font-size: 1rem;
+  border: 1px solid currentColor;
+  background-color: transparent;
+  color: inherit;
+  font-family: inherit;
+}
+
+.youLabel {
+  font-family: "Jacquard12", monospace;
+  font-size: 1.5rem;
+  white-space: nowrap;
+}
+
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secretInput {
+  width: 200px;
   padding: 8px;
   font-size: 1rem;
-  margin-bottom: 8px;
-  align-self: center;
+  border: 1px solid currentColor;
+  background-color: transparent;
+  color: inherit;
+  font-family: monospace;
+  caret-color: cyan;
 }
 
-.piece11File {
-  margin-bottom: 8px;
-  margin-left: 10%;
-  align-self: center;
+.secretInput:focus {
+  outline: none;
+  border-color: currentColor;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.cursorIndicator {
+  font-family: monospace;
+  font-size: 0.9rem;
+  min-width: 30px;
   text-align: center;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.piece11Button {
-  padding: 8px 24px;
+.shhLabel {
   font-family: "Jacquard12", monospace;
-  font-size: 2.5rem;
-  color: cyan;
-  min-width: 120px;
-  align-self: flex-end;
-  border: none;
+  font-size: 1.5rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background-color: transparent;
-  padding: 0;
-  align-self: center;
 }
 
-.piece11Button:hover {
+.submitButton {
+  padding: 4px 16px;
+  font-family: "Jacquard12", monospace;
+  font-size: 1.2rem;
+  color: cyan;
+  border: none;
   background-color: transparent;
-  color: black;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.submitButton:hover {
+  color: #00ffff;
   text-shadow: 0 0 8px cyan;
-  transition: 0.3s ease;
-  border: none;
-  padding: 0;
 }
 
-.piece11Error {
-  color: red;
-  margin-top: 16px;
-}
-
-.piece11Poem {
-  width: 100vw;
-  height: 50vh;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  position: relative;
-}
-
-.piece11PoemContent {
-  white-space: pre-line;
-  position: absolute;
-  mix-blend-mode: hard-light;
-  padding: 32px;
-  color: white;
-  font-family: "Courier New", Courier, monospace;
-}
-
-.piece11PoemContent p {
-  line-height: 1.5;
-  font-size: 1.25vh;
-  background-color: black;
-}
-
-.piece11PoemBack {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-}
-
-.piece11Container p {
-  line-height: 1.5;
-  font-size: 1.25vh;
-  background-color: black;
+.submitButton:active {
+  opacity: 0.7;
 }

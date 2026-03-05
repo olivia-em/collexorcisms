@@ -9,12 +9,8 @@ const Piece4 = () => {
 
   const handleImageClick = (filename) => {
     trackMfFile(filename); // track which files have been opened
-    const link = document.createElement("a");
-    link.href = `${import.meta.env.BASE_URL}assets/piece4/${filename}`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = `${import.meta.env.BASE_URL}assets/piece4/${filename}`;
+    window.open(url, "_blank");
   };
 
   const images = [

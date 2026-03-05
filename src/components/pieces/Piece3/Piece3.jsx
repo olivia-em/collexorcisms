@@ -68,12 +68,8 @@ white carpet stains,
   const handleBirdClick = (filename) => {
     if (!filename) return;
     trackLofFile(filename); // track which files have been opened
-    const link = document.createElement("a");
-    link.href = `${import.meta.env.BASE_URL}assets/piece3/${filename}`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = `${import.meta.env.BASE_URL}assets/piece3/${filename}`;
+    window.open(url, "_blank");
   };
 
   const birds = [
