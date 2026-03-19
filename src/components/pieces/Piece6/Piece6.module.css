@@ -27,6 +27,30 @@
   overflow: hidden;
 }
 
+.titleButtonContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  padding: 16px 32px;
+  cursor: pointer;
+  font-size: 2vh;
+  font-family: "Jacquard12", serif;
+  color: #fff;
+  text-shadow: 0 0 10px cyan;
+}
+
+.titleButton {
+  margin: 0;
+  padding: 0;
+  font-size: 2vh;
+  font-family: "Jacquard12", serif;
+  color: #fff;
+  text-shadow: 0 0 10px cyan;
+  white-space: nowrap;
+}
+
 .word {
   color: cyan;
   font-size: 0.8vh;

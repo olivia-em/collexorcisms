@@ -6,26 +6,126 @@
 }
 
 .piece21Container {
-  display: flex;
-  width: 90%;
-  justify-content: flex-start;
-  align-items: center;
-  height: 100vh;
+  position: relative;
+  width: 100vw;
+  height: 50vh;
+  overflow: hidden;
+  background: #000;
 }
 
-.h2Title {
-  font-size: 1rem;
-  color: cyan;
-  margin-bottom: 0rem;
-  font-family: "Jacquard12", monospace;
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
-.poemText {
-  font-size: 0.5rem;
-  font-weight: 800;
-  text-align: left;
-  max-width: 600px;
-  line-height: 1.7;
+.titleButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  color: #00eaea;
+  font-family: "Jacquard12", serif;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  z-index: 3;
+  transition:
+    color 0.35s ease-in-out,
+    text-shadow 0.35s ease-in-out,
+    filter 0.35s ease-in-out;
+}
+
+.titleButton:hover:enabled {
+  color: #ff3a3a;
+  text-shadow: 0 0 10px rgba(255, 58, 58, 0.35);
+  filter: brightness(1.1);
+}
+
+.titleExit {
+  animation: titleSlideOut 900ms ease-in-out forwards;
+  pointer-events: none;
+}
+
+.linesLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.line {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
   margin: 0;
-  padding: 0;
+  transform: translateX(-120%) translateY(-50%);
+  color: #d6d6d6;
+  font-family: "Jacquard12", serif;
+  font-size: clamp(1.35rem, 4vw, 2.75rem);
+  line-height: 1.1;
+  text-align: center;
+  opacity: 0;
+  white-space: pre;
+  animation-name: linePass;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.lineHold {
+  animation-name: linePassHold;
+}
+
+@keyframes linePass {
+  0% {
+    transform: translateX(-120%) translateY(-50%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  35% {
+    transform: translateX(0%) translateY(-50%);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(0%) translateY(-50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%) translateY(-50%);
+    opacity: 0;
+  }
+}
+
+@keyframes linePassHold {
+  0% {
+    transform: translateX(-120%) translateY(-50%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  40% {
+    transform: translateX(0%) translateY(-50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0%) translateY(-50%);
+    opacity: 1;
+  }
+}
+
+@keyframes titleSlideOut {
+  0% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(130%, -50%);
+    opacity: 0;
+  }
 }

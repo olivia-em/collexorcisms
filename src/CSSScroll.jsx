@@ -40,15 +40,20 @@ const Piece22 = lazy(() => import("./components/pieces/Piece22/Piece22"));
 // ─── Mount distance tuning ────────────────────────────────────────────────────
 const MOUNT_LOOKAHEAD = 3000; // load this many px ahead of camera
 const UNMOUNT_DISTANCE = 2500; // unmount this many px behind camera
-// Piece index (0-based) of any WebGL pieces that must never be unmounted
-// once loaded — unmounting destroys their GL context.
-const WEBGL_PIECES = new Set([4]); // Piece5 is index 4
+const PIECE7_MOUNT_LOOKAHEAD = 1300; // tighter mount window for Piece7
+const PIECE7_UNMOUNT_DISTANCE = 1100; // unmount closer to off-screen
+const CAMERA_VISIT_THRESHOLD = 500; // used by PieceVisibilityContext / markVisited
+const INTERACTION_THRESHOLD = 900; // used for pointer-events gating
+// Piece index (0-based) of pieces that must never be unmounted once loaded.
+// WebGL pieces stay mounted to avoid context loss.
+const STICKY_MOUNT_PIECES = new Set([4]); // Piece5
 
 // ─── Piece wrapper ────────────────────────────────────────────────────────────
 // everMountedRef: a plain Set ref shared from the parent — tracks which piece
 // indices have ever been mounted so WebGL pieces stay alive once loaded.
 function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
   const distance = z - cameraZ;
+  const isPiece7 = pieceIndex === 6;
 
   let opacity = 1;
   if (distance < 1 && distance > -2) {
@@ -60,24 +65,37 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
     opacity = 0;
   }
 
-  const inRange = distance > -UNMOUNT_DISTANCE && distance < MOUNT_LOOKAHEAD;
+  const effectiveUnmountDistance = isPiece7
+    ? PIECE7_UNMOUNT_DISTANCE
+    : UNMOUNT_DISTANCE;
+  const effectiveMountLookahead = isPiece7
+    ? PIECE7_MOUNT_LOOKAHEAD
+    : MOUNT_LOOKAHEAD;
+  const inRange =
+    distance > -effectiveUnmountDistance && distance < effectiveMountLookahead;
 
   // A piece is "at camera" when it's close enough to be fully opaque
   // This is what gates useTrackPiece markVisited
-  const isAtCamera = distance > -500 && distance < 500;
+  const isAtCamera =
+    distance > -CAMERA_VISIT_THRESHOLD && distance < CAMERA_VISIT_THRESHOLD;
 
-  // WebGL pieces: once mounted, never unmounted (context would be lost)
-  // All other pieces: normal mount/unmount based on distance
-  const isWebGL = WEBGL_PIECES.has(pieceIndex);
+  // Interaction can remain active a bit longer than visit tracking
+  // so hover/click doesn't drop the moment a piece is slightly past center.
+  const isInteractive =
+    distance > -INTERACTION_THRESHOLD && distance < INTERACTION_THRESHOLD;
+
+  // Sticky-mounted pieces: once mounted, never unmounted.
+  // All other pieces: normal mount/unmount based on distance.
+  const isStickyMounted = STICKY_MOUNT_PIECES.has(pieceIndex);
   if (inRange) everMountedRef.current.add(pieceIndex);
-  const shouldMount = isWebGL
+  const shouldMount = isStickyMounted
     ? everMountedRef.current.has(pieceIndex)
     : inRange;
 
-  // WebGL pieces that are far away: keep in DOM but hide with visibility
-  // so they don't consume GPU fill rate while still preserving context
+  // Sticky-mounted pieces that are far away: keep in DOM but hide with
+  // visibility so they don't consume paint/fill unnecessarily.
   const isHidden =
-    isWebGL && !inRange && everMountedRef.current.has(pieceIndex);
+    isStickyMounted && !inRange && everMountedRef.current.has(pieceIndex);
 
   return (
     <PieceVisibilityContext.Provider value={isAtCamera}>
@@ -98,6 +116,7 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
           boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           opacity,
           transition: "opacity 0.1s",
+          pointerEvents: isInteractive ? "auto" : "none",
           // visibility:hidden removes from paint but keeps GL context alive
           visibility: isHidden ? "hidden" : "visible",
         }}

@@ -179,6 +179,13 @@ const OLIVIA_FINAL_ERRORS = [
   "ERROR: It\u2019ll just get easier to do it.",
 ];
 
+const OLIVIA_ONLY_PIECE_ERRORS = [
+  "ERROR: Obituary unfinished.",
+  "ERROR: This one is just for you\u2026 and it\u2019s not ready.",
+  "ERROR: This one is just for you\u2026 and you\u2019re not ready.",
+  "ERROR: Olivia, your obituary is still being written.",
+];
+
 // Consistent delay for all error lines
 const ERROR_DELAY = 1500;
 
@@ -243,9 +250,19 @@ export default function Terminal({ onboardingDone = false }) {
   const oliviaActiveRef = useRef(false);
   const oliviaTimersRef = useRef([]);
   const hasOpenedRef = useRef(false);
+  const oliviaOnlyPieceErrorIdxRef = useRef(0);
   const passkeyBuffer = useRef("");
   const passkeyUsed = useRef(false);
   const PASSKEY = "3200";
+
+  const getNextOliviaOnlyPieceError = useCallback(() => {
+    const msg =
+      OLIVIA_ONLY_PIECE_ERRORS[
+        oliviaOnlyPieceErrorIdxRef.current % OLIVIA_ONLY_PIECE_ERRORS.length
+      ];
+    oliviaOnlyPieceErrorIdxRef.current += 1;
+    return msg;
+  }, []);
 
   const nextId = () => {
     idRef.current += 1;
@@ -677,6 +694,12 @@ export default function Terminal({ onboardingDone = false }) {
             .filter(([, pieces]) => pieces.includes(slugFromArg))
             .map(([name]) => name)
             .filter((name) => name !== "Olivia");
+
+          if (people.length === 0) {
+            await printLine(getNextOliviaOnlyPieceError(), "error");
+            return;
+          }
+
           await printLine("", "output", 20);
           for (const person of people) {
             if (game.isObitUnlocked(person)) {
@@ -800,6 +823,7 @@ export default function Terminal({ onboardingDone = false }) {
       printLines,
       runOliviaLoop,
       runOliviaFinalSequence,
+      getNextOliviaOnlyPieceError,
       stopOliviaLoop,
     ],
   );
@@ -898,7 +922,8 @@ export default function Terminal({ onboardingDone = false }) {
               flexDirection: "column",
               boxShadow: "0 12px 48px rgba(0,0,0,0.9)",
               fontFamily: "'Courier New', Courier, monospace",
-              fontSize: "13px",
+              fontSize: "14px",
+              fontWeight: 800,
               lineHeight: "1.65",
               overflow: "hidden",
               cursor: "text",
@@ -1100,7 +1125,8 @@ function SymbolsOverlay({ tick }) {
         padding: "14px 20px",
         overflow: "hidden",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "13px",
+        fontSize: "14px",
+        fontWeight: 800,
         lineHeight: "1.65",
         color: "#e05555",
         pointerEvents: "none",

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import p5 from "p5";
 import styles from "./Piece6.module.css";
 import useTrackPiece from "../../../useTrackPiece";
+import GlitchText from "../../GlitchText";
 
 const GROUPS = [
   { min: 10, max: 99 },
@@ -42,8 +43,18 @@ function groupWords(tokens) {
 
 const Piece6 = () => {
   const [groups, setGroups] = useState([]);
+  const [audioStarted, setAudioStarted] = useState(false);
   const canvasRef = useRef();
-  useTrackPiece("cursedVisions");
+  const audioRef = useRef(null);
+  const glitchRef = useRef(null);
+  const audioStartedRef = useRef(false);
+  const audioInitializedRef = useRef(false);
+  const { markCompleted } = useTrackPiece("cursedVisions");
+  const markCompletedRef = useRef(markCompleted);
+
+  useEffect(() => {
+    markCompletedRef.current = markCompleted;
+  }, [markCompleted]);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}assets/iliad.txt`)
@@ -54,6 +65,71 @@ const Piece6 = () => {
         setGroups(grouped);
       });
   }, []);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.onended = null;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+      audioRef.current = null;
+      audioInitializedRef.current = false;
+      audioStartedRef.current = false;
+    };
+  }, []);
+
+  // Handle title button click
+  const handleTitleClick = () => {
+    // console.log(
+    //   "[Piece6] Title clicked, audioStartedRef.current:",
+    //   audioStartedRef.current,
+    // );
+    if (!audioInitializedRef.current) {
+      const audioUrl = `${import.meta.env.BASE_URL}assets/piece6/olivia.love.mp3`;
+      const audio = new Audio(audioUrl);
+      audio.preload = "auto";
+      audio.onended = () => {
+        markCompletedRef.current?.();
+      };
+      audioRef.current = audio;
+      audioInitializedRef.current = true;
+    }
+
+    if (!audioStartedRef.current && audioRef.current) {
+      // console.log("[Piece6] Starting audio...");
+      audioStartedRef.current = true;
+      setAudioStarted(true);
+      // console.log("[Piece6] audioRef.current.src:", audioRef.current.src);
+      // console.log(
+      //   "[Piece6] audioRef.current.readyState:",
+      //   audioRef.current.readyState,
+      // );
+
+      audioRef.current
+        .play()
+        .then(() => {
+          // console.log(
+          //   "[Piece6] Audio play() promise resolved - playback started",
+          // );
+        })
+        .catch((err) => {
+          // console.error("[Piece6] Audio play failed:", err);
+          // console.error("[Piece6] Error name:", err.name);
+          // console.error("[Piece6] Error message:", err.message);
+        });
+
+      // Trigger glitch effect
+      // console.log("[Piece6] Triggering glitch effect");
+      if (glitchRef.current) {
+        glitchRef.current.triggerGlitch?.();
+      }
+    } else {
+      // console.log("[Piece6] Click ignored - already started or no audio ref");
+    }
+  };
 
   useEffect(() => {
     if (!groups.length) return;
@@ -138,6 +214,25 @@ const Piece6 = () => {
   return (
     <div className={styles.piece6Container}>
       <div ref={canvasRef} />
+      {!audioStarted && (
+        <div
+          className={styles.titleButtonContainer}
+          onClick={handleTitleClick}
+          style={{ cursor: "pointer" }}
+        >
+          <GlitchText
+            ref={glitchRef}
+            text="cursedVisions"
+            as="h2"
+            mode="hover"
+            intensity="medium"
+            className={styles.titleButton}
+            style={{
+              userSelect: "none",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

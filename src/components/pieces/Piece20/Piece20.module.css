@@ -6,26 +6,39 @@
 }
 
 .piece20Container {
-  display: flex;
-  width: 90%;
-  justify-content: flex-start;
-  align-items: center;
-  height: 100vh;
+  position: relative;
+  width: 100vw;
+  height: 50vh;
+  overflow: visible;
+  background: #fff;
+  border: 1px solid rgba(0, 255, 255, 0.55);
+  box-shadow:
+    0 0 22px rgba(0, 255, 255, 0.5),
+    0 0 46px rgba(0, 255, 255, 0.28),
+    inset 0 0 16px rgba(0, 255, 255, 0.18);
 }
 
-.h2Title {
-  font-size: 1rem;
-  color: cyan;
-  margin-bottom: 0rem;
-  font-family: "Jacquard12", monospace;
+.sketchMount {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: auto;
+  mix-blend-mode: difference;
 }
 
-.poemText {
-  font-size: 0.5rem;
-  font-weight: 800;
-  text-align: left;
-  max-width: 600px;
-  line-height: 1.7;
+.loadingText {
+  position: absolute;
+  inset: 0;
   margin: 0;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a7a7a;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 3;
 }

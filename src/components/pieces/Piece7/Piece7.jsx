@@ -135,8 +135,8 @@ const Word = React.memo(function Word({
 });
 
 const Piece7 = () => {
-  useTrackPiece("untitled");
-  const { incrementPiece7 } = useGame();
+  const { markCompleted, isCompleted } = useTrackPiece("untitled");
+  const { incrementPiece7, state } = useGame();
 
   const [markov, setMarkov] = useState(null);
   const [lines, setLines] = useState([]);
@@ -149,10 +149,35 @@ const Piece7 = () => {
 
   const timers = useRef([]);
   const wordMetaRef = useRef([]);
+  const audioRef = useRef(null);
+  const audioStartedRef = useRef(false);
+  const completionEmittedRef = useRef(false);
+  const [audioFinished, setAudioFinished] = useState(false);
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
   };
+
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.onended = null;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+      audioRef.current = null;
+      audioStartedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (completionEmittedRef.current || isCompleted) return;
+    if (state.piece7ClickCount >= 11 && audioFinished) {
+      completionEmittedRef.current = true;
+      markCompleted();
+    }
+  }, [audioFinished, isCompleted, markCompleted, state.piece7ClickCount]);
 
   const generateWordMeta = (newLines) => {
     wordMetaRef.current = buildWordList(newLines).map(() => ({
@@ -249,7 +274,22 @@ const Piece7 = () => {
       animPhase === "glitching"
     )
       return;
-    incrementPiece7(); // increments counter, marks complete at 11
+    if (!audioStartedRef.current) {
+      const audio = new Audio(
+        `${import.meta.env.BASE_URL}assets/piece7/olivia.love.mp3`,
+      );
+      audio.preload = "auto";
+      audio.onended = () => {
+        setAudioFinished(true);
+      };
+      audioRef.current = audio;
+      audioStartedRef.current = true;
+      audio.play().catch(() => {
+        audioStartedRef.current = false;
+      });
+    }
+
+    incrementPiece7(); // increments global click counter for untitled
     const newLines = generateLines();
     if (animPhase === "idle") {
       runScatterIn(newLines);

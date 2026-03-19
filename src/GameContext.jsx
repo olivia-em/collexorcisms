@@ -34,13 +34,7 @@ export const PIECE_SLUGS = [
 ];
 
 // Pieces where visiting counts as completion (no interaction required)
-export const VISIT_ONLY_PIECES = new Set([
-  "justBones",
-  "cursedVisions",
-  "parasite",
-  "fetish",
-  "parthenogenesis",
-]);
+export const VISIT_ONLY_PIECES = new Set(["justBones", "parasite"]);
 
 // Display titles matching slug order, used by ls command
 export const PIECE_TITLES = {
@@ -453,12 +447,8 @@ export function GameProvider({ children }) {
       newCount = s.piece7ClickCount + 1;
       return { ...s, piece7ClickCount: newCount };
     });
-    // Complete at 11 — markCompleted writes both completedPieces and fullyCompletedPieces
-    if (getSnapshot().piece7ClickCount + 1 >= 11) {
-      markCompleted("untitled");
-    }
-    return getSnapshot().piece7ClickCount + 1;
-  }, [markCompleted]);
+    return newCount;
+  }, []);
 
   const trackPage129 = useCallback((pageId) => {
     const ALL_PAGES = ["1920", "2122", "2324", "192123", "202224"];

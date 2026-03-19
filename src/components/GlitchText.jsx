@@ -25,8 +25,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
  *   <GlitchText text="shedding_light" colors={["#fff","#ff00ff"]} className={styles.title} />
  */
 
-const DEFAULT_COLORS  = ["#c8c8c8", "#e05555", "#00ffff"];
-const DEFAULT_FONTS   = ["'Courier New', Courier, monospace", "'Jacquard12', serif"];
+const DEFAULT_COLORS = ["#c8c8c8", "#e05555", "#00ffff"];
+const DEFAULT_FONTS = [
+  "'Courier New', Courier, monospace",
+  "'Jacquard12', serif",
+];
 const DEFAULT_SYMBOLS = "!@#$%^&*()".split("");
 
 const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -35,70 +38,156 @@ const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // Each phase: { glitchFrac, symbolFrac, moveFrac, interval, duration }
 const PROFILES = {
   low: [
-    { glitchFrac: 0.05, symbolFrac: 0.00, moveFrac: 0.00, interval: 200, duration: 300 },
-    { glitchFrac: 0.25, symbolFrac: 0.10, moveFrac: 0.05, interval: 140, duration: 400 },
-    { glitchFrac: 0.05, symbolFrac: 0.00, moveFrac: 0.00, interval: 200, duration: 250 },
+    {
+      glitchFrac: 0.05,
+      symbolFrac: 0.0,
+      moveFrac: 0.0,
+      interval: 200,
+      duration: 300,
+    },
+    {
+      glitchFrac: 0.25,
+      symbolFrac: 0.1,
+      moveFrac: 0.05,
+      interval: 140,
+      duration: 400,
+    },
+    {
+      glitchFrac: 0.05,
+      symbolFrac: 0.0,
+      moveFrac: 0.0,
+      interval: 200,
+      duration: 250,
+    },
   ],
   medium: [
-    { glitchFrac: 0.08, symbolFrac: 0.00, moveFrac: 0.00, interval: 180, duration: 350 },
-    { glitchFrac: 0.50, symbolFrac: 0.20, moveFrac: 0.15, interval: 100, duration: 450 },
-    { glitchFrac: 0.90, symbolFrac: 0.65, moveFrac: 0.40, interval: 60,  duration: 400 },
-    { glitchFrac: 0.10, symbolFrac: 0.00, moveFrac: 0.00, interval: 160, duration: 300 },
+    {
+      glitchFrac: 0.08,
+      symbolFrac: 0.0,
+      moveFrac: 0.0,
+      interval: 180,
+      duration: 350,
+    },
+    {
+      glitchFrac: 0.5,
+      symbolFrac: 0.2,
+      moveFrac: 0.15,
+      interval: 100,
+      duration: 450,
+    },
+    {
+      glitchFrac: 0.9,
+      symbolFrac: 0.65,
+      moveFrac: 0.4,
+      interval: 60,
+      duration: 400,
+    },
+    {
+      glitchFrac: 0.1,
+      symbolFrac: 0.0,
+      moveFrac: 0.0,
+      interval: 160,
+      duration: 300,
+    },
   ],
   high: [
-    { glitchFrac: 0.15, symbolFrac: 0.05, moveFrac: 0.05, interval: 140, duration: 250 },
-    { glitchFrac: 0.70, symbolFrac: 0.40, moveFrac: 0.30, interval: 80,  duration: 400 },
-    { glitchFrac: 0.95, symbolFrac: 0.80, moveFrac: 0.60, interval: 45,  duration: 500 },
-    { glitchFrac: 0.20, symbolFrac: 0.05, moveFrac: 0.00, interval: 140, duration: 250 },
+    {
+      glitchFrac: 0.15,
+      symbolFrac: 0.05,
+      moveFrac: 0.05,
+      interval: 140,
+      duration: 250,
+    },
+    {
+      glitchFrac: 0.7,
+      symbolFrac: 0.4,
+      moveFrac: 0.3,
+      interval: 80,
+      duration: 400,
+    },
+    {
+      glitchFrac: 0.95,
+      symbolFrac: 0.8,
+      moveFrac: 0.6,
+      interval: 45,
+      duration: 500,
+    },
+    {
+      glitchFrac: 0.2,
+      symbolFrac: 0.05,
+      moveFrac: 0.0,
+      interval: 140,
+      duration: 250,
+    },
   ],
 };
 
 // ─── Single glitching word ────────────────────────────────────────────────────
-function GlitchWord({ word, seed, glitchFrac, symbolFrac, moveFrac, glitchTick, colors, fonts, symbols }) {
+function GlitchWord({
+  word,
+  seed,
+  glitchFrac,
+  symbolFrac,
+  moveFrac,
+  glitchTick,
+  colors,
+  fonts,
+  symbols,
+}) {
   const isActive = seed < glitchFrac;
-  const isSymbol = isActive && (seed * 13 % 1) < symbolFrac;
-  const isMoving = isActive && (seed * 7  % 1) < moveFrac;
+  const isSymbol = isActive && (seed * 13) % 1 < symbolFrac;
+  const isMoving = isActive && (seed * 7) % 1 < moveFrac;
 
   const display = isSymbol
-    ? word.split("").map(() => randOf(symbols)).join("")
+    ? word
+        .split("")
+        .map(() => randOf(symbols))
+        .join("")
     : word;
 
   const color = isActive ? randOf(colors) : undefined;
-  const font  = isActive ? randOf(fonts)  : undefined;
+  const font = isActive ? randOf(fonts) : undefined;
 
-  const moveX = isMoving ? (Math.sin(seed * 999 + glitchTick) * 10) + "px" : "0px";
-  const moveY = isMoving ? (Math.cos(seed * 777 + glitchTick) * 7)  + "px" : "0px";
+  const moveX = isMoving
+    ? Math.sin(seed * 999 + glitchTick) * 10 + "px"
+    : "0px";
+  const moveY = isMoving ? Math.cos(seed * 777 + glitchTick) * 7 + "px" : "0px";
 
   return (
-    <span style={{
-      display:    "inline-block",
-      whiteSpace: "pre",
-      color,
-      fontFamily: font,
-      transform:  `translate(${moveX}, ${moveY})`,
-      transition: isMoving ? "none" : "transform 0.3s ease",
-      willChange: "transform",
-    }}>
+    <span
+      style={{
+        display: "inline-block",
+        whiteSpace: "pre",
+        color,
+        fontFamily: font,
+        transform: `translate(${moveX}, ${moveY})`,
+        transition: isMoving ? "none" : "transform 0.3s ease",
+        willChange: "transform",
+      }}
+    >
       {display}{" "}
     </span>
   );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function GlitchText({
-  text,
-  as: Tag       = "span",
-  mode          = "hover",
-  autoInterval  = 3500,
-  intensity     = "medium",
-  colors        = DEFAULT_COLORS,
-  fonts         = DEFAULT_FONTS,
-  symbols       = DEFAULT_SYMBOLS,
-  style,
-  className,
-  ...rest
-}) {
-  const words   = text.split(/\s+/).filter(Boolean);
+const GlitchTextComponent = React.forwardRef(function GlitchText(
+  {
+    text,
+    as: Tag = "span",
+    mode = "hover",
+    autoInterval = 3500,
+    intensity = "medium",
+    colors = DEFAULT_COLORS,
+    fonts = DEFAULT_FONTS,
+    symbols = DEFAULT_SYMBOLS,
+    style,
+    className,
+    ...rest
+  },
+  ref,
+) {
+  const words = text.split(/\s+/).filter(Boolean);
   const profile = PROFILES[intensity] ?? PROFILES.medium;
 
   // Stable per-word seeds — generated once, stored in ref so they never
@@ -109,20 +198,23 @@ export default function GlitchText({
   }
 
   const [isGlitching, setIsGlitching] = useState(false);
-  const [glitchFrac,  setGlitchFrac]  = useState(0);
-  const [symbolFrac,  setSymbolFrac]  = useState(0);
-  const [moveFrac,    setMoveFrac]    = useState(0);
-  const [glitchTick,  setGlitchTick]  = useState(0);
+  const [glitchFrac, setGlitchFrac] = useState(0);
+  const [symbolFrac, setSymbolFrac] = useState(0);
+  const [moveFrac, setMoveFrac] = useState(0);
+  const [glitchTick, setGlitchTick] = useState(0);
   const timers = useRef([]);
 
-  const clearAll = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+  const clearAll = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  };
 
   const triggerGlitch = useCallback(() => {
     if (isGlitching) return;
     clearAll();
     setIsGlitching(true);
 
-    let elapsed   = 0;
+    let elapsed = 0;
     let tickTimer = null;
 
     const startTick = (interval) => {
@@ -149,12 +241,24 @@ export default function GlitchText({
 
     const done = setTimeout(() => {
       clearAll();
-      setGlitchFrac(0); setSymbolFrac(0); setMoveFrac(0);
-      setGlitchTick(0); setIsGlitching(false);
+      setGlitchFrac(0);
+      setSymbolFrac(0);
+      setMoveFrac(0);
+      setGlitchTick(0);
+      setIsGlitching(false);
     }, elapsed + 100);
     timers.current.push(done);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGlitching, intensity]);
+
+  // Expose triggerGlitch via ref
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      triggerGlitch,
+    }),
+    [triggerGlitch],
+  );
 
   // Auto mode
   useEffect(() => {
@@ -173,7 +277,9 @@ export default function GlitchText({
     <Tag
       style={style}
       className={className}
-      onMouseEnter={() => { if (mode === "hover" || mode === "both") triggerGlitch(); }}
+      onMouseEnter={() => {
+        if (mode === "hover" || mode === "both") triggerGlitch();
+      }}
       {...rest}
     >
       {words.map((word, i) => (
@@ -192,4 +298,6 @@ export default function GlitchText({
       ))}
     </Tag>
   );
-}
+});
+
+export default GlitchTextComponent;

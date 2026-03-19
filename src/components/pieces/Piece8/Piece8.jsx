@@ -5,7 +5,8 @@ import AnimatedLine from "./AnimatedLine.jsx";
 import useTrackPiece from "../../../useTrackPiece";
 
 const Piece8 = () => {
-  const { markCompleted, markInteracted } = useTrackPiece("objects_in_eleven");
+  const { markCompleted, markInteracted, isCompleted } =
+    useTrackPiece("objects_in_eleven");
 
   const [allVersions, setAllVersions] = useState([]);
   const [currentVersion, setCurrentVersion] = useState(-1);
@@ -13,6 +14,11 @@ const Piece8 = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [audioFinished, setAudioFinished] = useState(false);
+
+  const audioRef = React.useRef(null);
+  const audioStartedRef = React.useRef(false);
+  const completionEmittedRef = React.useRef(false);
 
   useEffect(() => {
     const loadFiles = async () => {
@@ -31,6 +37,27 @@ const Piece8 = () => {
     loadFiles();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.onended = null;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+      audioRef.current = null;
+      audioStartedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (completionEmittedRef.current || isCompleted) return;
+    if (currentVersion >= 10 && audioFinished) {
+      completionEmittedRef.current = true;
+      markCompleted();
+    }
+  }, [audioFinished, currentVersion, isCompleted, markCompleted]);
+
   const handleNext = () => {
     if (isAnimating || currentVersion >= 10 || allVersions.length === 0) return;
 
@@ -45,16 +72,30 @@ const Piece8 = () => {
       markInteracted();
     }
 
+    // Second click — start audio once
+    if (!audioStartedRef.current && nextVersion >= 1) {
+      const audio = new Audio(
+        `${import.meta.env.BASE_URL}assets/piece8/olivia.love.mp3`,
+      );
+      audio.preload = "auto";
+      audio.onended = () => {
+        setAudioFinished(true);
+      };
+      audioRef.current = audio;
+      audioStartedRef.current = true;
+      audio.play().catch(() => {
+        audioStartedRef.current = false;
+      });
+    }
+
     const diff = diffLines(oldLines, newLines);
     setOperations(diff);
     setCurrentVersion(nextVersion);
     setIsAnimating(true);
     setCompletedLines(new Set());
 
-    // Final version (index 10 = 11th) — mark fully completed for Olivia's obit
-    if (nextVersion === 10) {
-      markCompleted();
-    }
+    // Completion is now gated by BOTH conditions:
+    // 1) final version reached (index 10), and 2) audio finished.
   };
 
   const handleLineComplete = useCallback(
