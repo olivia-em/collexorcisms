@@ -13,6 +13,10 @@ import styles from "./CSSScroll.module.css";
 // Pieces consume this to know whether they are currently "at the camera"
 // (opacity === 1). useTrackPiece gates markVisited on this.
 export const PieceVisibilityContext = createContext(false);
+// Pieces can also consume this wider range to show UI while still interactable.
+export const PieceInteractionContext = createContext(false);
+// True only when camera is clamped at the furthest scroll position.
+export const ScrollAtEndContext = createContext(false);
 
 const Piece1 = lazy(() => import("./components/pieces/Piece1/Piece1"));
 const Piece2 = lazy(() => import("./components/pieces/Piece2/Piece2"));
@@ -99,30 +103,32 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
 
   return (
     <PieceVisibilityContext.Provider value={isAtCamera}>
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          width: "50vw",
-          height: "50vh",
-          transform: `translate(-50%, -50%) translateZ(${z}px)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#000",
-          color: "rgba(255, 255, 255, 0.95)",
-          borderRadius: "0px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          opacity,
-          transition: "opacity 0.1s",
-          pointerEvents: isInteractive ? "auto" : "none",
-          // visibility:hidden removes from paint but keeps GL context alive
-          visibility: isHidden ? "hidden" : "visible",
-        }}
-      >
-        {shouldMount ? children : null}
-      </div>
+      <PieceInteractionContext.Provider value={isInteractive}>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: "50vw",
+            height: "50vh",
+            transform: `translate(-50%, -50%) translateZ(${z}px)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#000",
+            color: "rgba(255, 255, 255, 0.95)",
+            borderRadius: "0px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            opacity,
+            transition: "opacity 0.1s",
+            pointerEvents: isInteractive ? "auto" : "none",
+            // visibility:hidden removes from paint but keeps GL context alive
+            visibility: isHidden ? "hidden" : "visible",
+          }}
+        >
+          {shouldMount ? children : null}
+        </div>
+      </PieceInteractionContext.Provider>
     </PieceVisibilityContext.Provider>
   );
 }
@@ -139,6 +145,7 @@ export default function ThreeScroll({ setGoToPiece }) {
   const minZ = -(numPieces - 1) * spacing - 700;
   const maxZ = -200;
   const piece22Z = -200 - (numPieces - 1) * spacing;
+  const isAtFurthestScrollPoint = cameraZ <= minZ + 0.5;
 
   // Expose goToPiece — identical to original
   useEffect(() => {
@@ -198,234 +205,236 @@ export default function ThreeScroll({ setGoToPiece }) {
   }, [minZ, maxZ]);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.perspectiveWrap}>
-        <div
-          className={styles.preserve3dWrap}
-          style={{ transform: `translateZ(${-cameraZ}px)` }}
-        >
-          <Piece
-            z={-200}
-            pieceIndex={0}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
+    <ScrollAtEndContext.Provider value={isAtFurthestScrollPoint}>
+      <div className={styles.container}>
+        <div className={styles.perspectiveWrap}>
+          <div
+            className={styles.preserve3dWrap}
+            style={{ transform: `translateZ(${-cameraZ}px)` }}
           >
-            <Suspense fallback={<div />}>
-              <Piece1 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 1 * spacing}
-            pieceIndex={1}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece2 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 2 * spacing}
-            pieceIndex={2}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece3 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 3 * spacing}
-            pieceIndex={3}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece4 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 4 * spacing}
-            pieceIndex={4}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece5 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 5 * spacing}
-            pieceIndex={5}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece6 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 6 * spacing}
-            pieceIndex={6}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece7 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 7 * spacing}
-            pieceIndex={7}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece8 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 8 * spacing}
-            pieceIndex={8}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece9 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 9 * spacing}
-            pieceIndex={9}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece10 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 10 * spacing}
-            pieceIndex={10}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece11 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 11 * spacing}
-            pieceIndex={11}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece12 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 12 * spacing}
-            pieceIndex={12}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece13 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 13 * spacing}
-            pieceIndex={13}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece14 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 14 * spacing}
-            pieceIndex={14}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece15 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 15 * spacing}
-            pieceIndex={15}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece16 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 16 * spacing}
-            pieceIndex={16}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece17 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 17 * spacing}
-            pieceIndex={17}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece18 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 18 * spacing}
-            pieceIndex={18}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece19 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 19 * spacing}
-            pieceIndex={19}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece20 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={-200 - 20 * spacing}
-            pieceIndex={20}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece21 />
-            </Suspense>
-          </Piece>
-          <Piece
-            z={piece22Z}
-            pieceIndex={21}
-            everMountedRef={everMountedRef}
-            cameraZ={cameraZ}
-          >
-            <Suspense fallback={<div />}>
-              <Piece22 />
-            </Suspense>
-          </Piece>
+            <Piece
+              z={-200}
+              pieceIndex={0}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece1 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 1 * spacing}
+              pieceIndex={1}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece2 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 2 * spacing}
+              pieceIndex={2}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece3 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 3 * spacing}
+              pieceIndex={3}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece4 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 4 * spacing}
+              pieceIndex={4}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece5 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 5 * spacing}
+              pieceIndex={5}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece6 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 6 * spacing}
+              pieceIndex={6}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece7 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 7 * spacing}
+              pieceIndex={7}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece8 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 8 * spacing}
+              pieceIndex={8}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece9 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 9 * spacing}
+              pieceIndex={9}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece10 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 10 * spacing}
+              pieceIndex={10}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece11 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 11 * spacing}
+              pieceIndex={11}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece12 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 12 * spacing}
+              pieceIndex={12}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece13 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 13 * spacing}
+              pieceIndex={13}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece14 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 14 * spacing}
+              pieceIndex={14}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece15 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 15 * spacing}
+              pieceIndex={15}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece16 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 16 * spacing}
+              pieceIndex={16}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece17 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 17 * spacing}
+              pieceIndex={17}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece18 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 18 * spacing}
+              pieceIndex={18}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece19 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 19 * spacing}
+              pieceIndex={19}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece20 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={-200 - 20 * spacing}
+              pieceIndex={20}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece21 />
+              </Suspense>
+            </Piece>
+            <Piece
+              z={piece22Z}
+              pieceIndex={21}
+              everMountedRef={everMountedRef}
+              cameraZ={cameraZ}
+            >
+              <Suspense fallback={<div />}>
+                <Piece22 />
+              </Suspense>
+            </Piece>
+          </div>
         </div>
       </div>
-    </div>
+    </ScrollAtEndContext.Provider>
   );
 }

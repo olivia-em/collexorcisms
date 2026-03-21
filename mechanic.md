@@ -66,7 +66,7 @@ A title crosses out in ls when:
 
 **Piece 11 — secrets**
 
-- Single interaction (markInteracted). Required by Mark only.
+- Completion is tied to the secret unlock. Press all 3 unique "shh..." submit buttons; on the third unique submit, Piece 11 calls markCompleted and opens /assets/piece11/secrets.txt in a new tab. Required by Mark only.
 
 **Piece 12 — parasite**
 
@@ -74,7 +74,7 @@ A title crosses out in ls when:
 
 **Piece 13 — the_empathy_machine**
 
-- Single interaction (markInteracted). Required by Ari.
+- Link-based completion. Clicking the ♱ link opens /assets/piece13/machine.txt in a new tab and calls markCompleted. Hovering the symbol no longer marks completion. Required by Ari.
 
 **Piece 14 — s_curves**
 
@@ -122,9 +122,9 @@ Each person's obit unlocks the moment all their pieces are in completedPieces (o
 | Saf     | teethmarks                                                                   | One interaction with Piece 20                                                                                                                                                                   |
 | Scott   | first_on_first                                                               | One interaction with Piece 19                                                                                                                                                                   |
 | Adham   | n23                                                                          | First link click in Piece 17                                                                                                                                                                    |
-| Mark    | secrets + confessions                                                        | Interacting with both Pieces 11 and 10                                                                                                                                                          |
+| Mark    | secrets + confessions                                                        | Completing Piece 11 (all 3 secret submits) and interacting with Piece 10                                                                                                                        |
 | Lee     | s_curves + shedding_light                                                    | Interacting with Piece 14, and rotating Piece 16 a full 360°                                                                                                                                    |
-| Ari     | the_empathy_machine + silhouettes                                            | Interacting with both Pieces 13 and 9                                                                                                                                                           |
+| Ari     | the_empathy_machine + silhouettes                                            | Clicking the Piece 13 ♱ link and interacting with Piece 9                                                                                                                                       |
 | Derek   | silhouettes + lack_of_flight                                                 | Interacting with Piece 9, and opening both files in Piece 3                                                                                                                                     |
 | Nick    | 31 + confessions + objects_in_eleven                                         | Interacting with Pieces 15, 10, and first click of Piece 8                                                                                                                                      |
 | AJ      | my_familiar + first_on_first + confessions + silhouettes + objects_in_eleven | All 4 files in Piece 4, plus interacting with Pieces 19, 10, 9, and first click of Piece 8                                                                                                      |

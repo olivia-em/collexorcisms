@@ -38,6 +38,16 @@
   padding: 0;
 }
 
+.symbolLink {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.25s ease-in-out;
+}
+
+.symbolLink:hover {
+  color: #000;
+}
+
 .hoverSymbol {
   cursor: pointer;
   transition: all 0.2s ease;

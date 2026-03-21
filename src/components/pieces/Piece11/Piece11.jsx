@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import styles from "./Piece11.module.css";
 import useTrackPiece from "../../../useTrackPiece";
 
-function SecretRow({ rowIndex }) {
+function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
   const [preposition, setPreposition] = useState("with");
   const [cursorPos, setCursorPos] = useState(0);
   const inputRef = useRef(null);
@@ -21,6 +21,8 @@ function SecretRow({ rowIndex }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setCursorPos(0);
+    if (isSubmitted) return;
+    onSecretSubmit(rowIndex);
   };
 
   const handleInputChange = (e) => {
@@ -55,7 +57,7 @@ function SecretRow({ rowIndex }) {
         />
         <span className={styles.cursorIndicator}>{cursorPos}</span>
       </div>
-      <span className={styles.shhLabel}>shhh</span>
+      {/* <span className={styles.shhLabel}>shhh</span> */}
       <button onClick={handleSubmit} className={styles.submitButton}>
         shh...
       </button>
@@ -64,18 +66,50 @@ function SecretRow({ rowIndex }) {
 }
 
 const Piece11 = () => {
-  const { markInteracted } = useTrackPiece("secrets");
+  const { markCompleted } = useTrackPiece("secrets");
+  const [submittedRows, setSubmittedRows] = useState([false, false, false]);
+  const hasOpenedSecretsRef = useRef(false);
 
-  React.useEffect(() => {
-    markInteracted();
-  }, [markInteracted]);
+  const handleSecretSubmit = useCallback((rowIndex) => {
+    setSubmittedRows((prev) => {
+      if (prev[rowIndex]) return prev;
+
+      const next = [...prev];
+      next[rowIndex] = true;
+
+      // Open the text file once all three unique submit buttons have been pressed.
+      if (!hasOpenedSecretsRef.current && next.every(Boolean)) {
+        hasOpenedSecretsRef.current = true;
+        markCompleted();
+        window.open(
+          "/assets/piece11/secrets.txt",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+
+      return next;
+    });
+  }, []);
 
   return (
     <div className={styles.piece11Container}>
       <div className={styles.secretsForm}>
-        <SecretRow rowIndex={0} />
-        <SecretRow rowIndex={1} />
-        <SecretRow rowIndex={2} />
+        <SecretRow
+          rowIndex={0}
+          onSecretSubmit={handleSecretSubmit}
+          isSubmitted={submittedRows[0]}
+        />
+        <SecretRow
+          rowIndex={1}
+          onSecretSubmit={handleSecretSubmit}
+          isSubmitted={submittedRows[1]}
+        />
+        <SecretRow
+          rowIndex={2}
+          onSecretSubmit={handleSecretSubmit}
+          isSubmitted={submittedRows[2]}
+        />
       </div>
     </div>
   );

@@ -4,16 +4,26 @@ import useTrackPiece from "../../../useTrackPiece";
 
 const Piece13 = () => {
   const [showSkull, setShowSkull] = useState(false);
-  const { markInteracted } = useTrackPiece("the_empathy_machine"); // interaction: hover
+  const { markCompleted } = useTrackPiece("the_empathy_machine");
   return (
     <div className={styles.piece13Container}>
       <p className={styles.symbolText}>
-        .♱˚♰˚⋆
+        .
+        <a
+          href="/assets/piece13/machine.txt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.symbolLink}
+          onClick={markCompleted}
+          aria-label="Open machine text"
+        >
+          ♱
+        </a>
+        ˚♰˚⋆
         <span
           className={styles.hoverSymbol}
           onMouseEnter={() => {
             setShowSkull(true);
-            markInteracted();
           }}
           onMouseLeave={() => setShowSkull(false)}
         >

@@ -204,7 +204,7 @@ function LockedObitName({ name }) {
       mode="auto"
       autoInterval={200}
       intensity="high"
-      colors={["#333", "#222", "#444"]}
+      colors={["red", "cyan", "#999"]}
       style={{
         textDecoration: "line-through",
         textDecorationColor: "#444",

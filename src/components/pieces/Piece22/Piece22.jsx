@@ -1,10 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import styles from "./Piece22.module.css";
 import useTrackPiece from "../../../useTrackPiece";
+import { ScrollAtEndContext } from "../../../CSSScroll";
 
 // parthenogenesis — audio plays on hover, completes on audio end
+const CITE_LINK_URL = "https://example.com";
+
 const Piece22 = () => {
   const { markCompleted } = useTrackPiece("parthenogenesis");
+  const isAtFurthestScrollPoint = useContext(ScrollAtEndContext);
   const markCompletedRef = useRef(markCompleted);
   const mountRef = useRef(null);
   const [lines, setLines] = useState([]);
@@ -274,6 +278,17 @@ const Piece22 = () => {
 
   return (
     <div className={styles.piece22Container}>
+      {isAtFurthestScrollPoint && (
+        <a
+          href={"https://forms.gle/Uu7xPm1TriJKTcVUA"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.citeLink}
+          aria-label="Open citation"
+        >
+          ^C
+        </a>
+      )}
       <div ref={mountRef} className={styles.sketchMount} />
       {lines.length === 0 && <p className={styles.loadingText}>loading...</p>}
     </div>
