@@ -92,6 +92,12 @@
   /* cursor: not-allowed; */
 }
 
+.titleButtonPrinting:disabled {
+  cursor:
+    url("/assets/piece8/hourglass.png") 16 16,
+    wait;
+}
+
 .line {
   min-height: 1.2em;
   white-space: pre-wrap;

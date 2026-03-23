@@ -3,6 +3,7 @@ import styles from "./Piece7.module.css";
 import MarkovGeneratorWord from "./markov.js";
 import useTrackPiece from "../../../useTrackPiece";
 import { useGame } from "../../../GameContext";
+import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 const GLITCH_COLORS = ["#c8c8c8", "#e05555", "#00ffff"];
 const GLITCH_FONTS = [
@@ -135,6 +136,7 @@ const Word = React.memo(function Word({
 });
 
 const Piece7 = () => {
+  const { getPieceVolume } = useAmbientAudio();
   const { markCompleted, isCompleted } = useTrackPiece("untitled");
   const { incrementPiece7, state } = useGame();
 
@@ -276,9 +278,10 @@ const Piece7 = () => {
       return;
     if (!audioStartedRef.current) {
       const audio = new Audio(
-        `${import.meta.env.BASE_URL}assets/piece7/olivia.love.mp3`,
+        `${import.meta.env.BASE_URL}assets/piece7/untitled.mp3`,
       );
       audio.preload = "auto";
+      audio.volume = getPieceVolume("piece7");
       audio.onended = () => {
         setAudioFinished(true);
       };

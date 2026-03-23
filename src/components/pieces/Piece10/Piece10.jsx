@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Piece10.module.css";
 import useTrackPiece from "../../../useTrackPiece";
+import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 const Piece10 = () => {
+  const { getPieceVolume } = useAmbientAudio();
   const spokenWordRef = useRef(null);
   const montageRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [spokenWordOpacity, setSpokenWordOpacity] = useState(0);
   const [montageOpacity, setMontageOpacity] = useState(1);
+  const spokenWordVolumeCap = getPieceVolume("piece10");
   const { markInteracted } = useTrackPiece("confessions");
   const handlePlay = async () => {
     try {
@@ -46,7 +49,8 @@ const Piece10 = () => {
       spokenWordRef.current.volume =
         normalizedY < muteThreshold
           ? 0
-          : (normalizedY - muteThreshold) / (1 - muteThreshold);
+          : ((normalizedY - muteThreshold) / (1 - muteThreshold)) *
+            spokenWordVolumeCap;
     }
   };
 

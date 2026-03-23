@@ -2,11 +2,13 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import styles from "./Piece22.module.css";
 import useTrackPiece from "../../../useTrackPiece";
 import { ScrollAtEndContext } from "../../../CSSScroll";
+import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 // parthenogenesis — audio plays on hover, completes on audio end
 const CITE_LINK_URL = "https://example.com";
 
 const Piece22 = () => {
+  const { getPieceVolume } = useAmbientAudio();
   const { markCompleted } = useTrackPiece("parthenogenesis");
   const isAtFurthestScrollPoint = useContext(ScrollAtEndContext);
   const markCompletedRef = useRef(markCompleted);
@@ -60,9 +62,10 @@ const Piece22 = () => {
     //   audioStartedRef.current,
     // );
     if (!audioInitializedRef.current) {
-      const audioUrl = `${import.meta.env.BASE_URL}assets/piece22/confessionsINSTRUMENTAL.mp3`;
+      const audioUrl = `${import.meta.env.BASE_URL}assets/piece22/parthenogenesis.mp3`;
       const audio = new Audio(audioUrl);
       audio.preload = "auto";
+      audio.volume = getPieceVolume("piece22");
       audio.onended = () => {
         markCompletedRef.current?.();
       };

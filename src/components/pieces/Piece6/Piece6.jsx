@@ -3,6 +3,7 @@ import p5 from "p5";
 import styles from "./Piece6.module.css";
 import useTrackPiece from "../../../useTrackPiece";
 import GlitchText from "../../GlitchText";
+import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 const GROUPS = [
   { min: 10, max: 99 },
@@ -42,6 +43,7 @@ function groupWords(tokens) {
 }
 
 const Piece6 = () => {
+  const { getPieceVolume } = useAmbientAudio();
   const [groups, setGroups] = useState([]);
   const [audioStarted, setAudioStarted] = useState(false);
   const canvasRef = useRef();
@@ -88,9 +90,10 @@ const Piece6 = () => {
     //   audioStartedRef.current,
     // );
     if (!audioInitializedRef.current) {
-      const audioUrl = `${import.meta.env.BASE_URL}assets/piece6/olivia.love.mp3`;
+      const audioUrl = `${import.meta.env.BASE_URL}assets/piece6/love_audio_collage.mp3`;
       const audio = new Audio(audioUrl);
       audio.preload = "auto";
+      audio.volume = getPieceVolume("piece6");
       audio.onended = () => {
         markCompletedRef.current?.();
       };
