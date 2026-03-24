@@ -136,7 +136,7 @@ const Word = React.memo(function Word({
 });
 
 const Piece7 = () => {
-  const { getPieceVolume } = useAmbientAudio();
+  const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const { markCompleted, isCompleted } = useTrackPiece("untitled");
   const { incrementPiece7, state } = useGame();
 
@@ -152,6 +152,7 @@ const Piece7 = () => {
   const timers = useRef([]);
   const wordMetaRef = useRef([]);
   const audioRef = useRef(null);
+  const unregisterAudioRef = useRef(null);
   const audioStartedRef = useRef(false);
   const completionEmittedRef = useRef(false);
   const [audioFinished, setAudioFinished] = useState(false);
@@ -168,6 +169,8 @@ const Piece7 = () => {
       audio.pause();
       audio.currentTime = 0;
       audio.src = "";
+      unregisterAudioRef.current?.();
+      unregisterAudioRef.current = null;
       audioRef.current = null;
       audioStartedRef.current = false;
     };
@@ -282,6 +285,7 @@ const Piece7 = () => {
       );
       audio.preload = "auto";
       audio.volume = getPieceVolume("piece7");
+      unregisterAudioRef.current = registerAudioElement("piece7", audio);
       audio.onended = () => {
         setAudioFinished(true);
       };

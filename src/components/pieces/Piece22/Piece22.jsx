@@ -8,13 +8,14 @@ import { useAmbientAudio } from "../../../AmbientAudioContext";
 const CITE_LINK_URL = "https://example.com";
 
 const Piece22 = () => {
-  const { getPieceVolume } = useAmbientAudio();
+  const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const { markCompleted } = useTrackPiece("parthenogenesis");
   const isAtFurthestScrollPoint = useContext(ScrollAtEndContext);
   const markCompletedRef = useRef(markCompleted);
   const mountRef = useRef(null);
   const [lines, setLines] = useState([]);
   const audioRef = useRef(null);
+  const unregisterAudioRef = useRef(null);
   const audioStartedRef = useRef(false);
   const audioInitializedRef = useRef(false);
 
@@ -49,6 +50,8 @@ const Piece22 = () => {
       audio.pause();
       audio.currentTime = 0;
       audio.src = "";
+      unregisterAudioRef.current?.();
+      unregisterAudioRef.current = null;
       audioRef.current = null;
       audioInitializedRef.current = false;
       audioStartedRef.current = false;
@@ -66,6 +69,7 @@ const Piece22 = () => {
       const audio = new Audio(audioUrl);
       audio.preload = "auto";
       audio.volume = getPieceVolume("piece22");
+      unregisterAudioRef.current = registerAudioElement("piece22", audio);
       audio.onended = () => {
         markCompletedRef.current?.();
       };

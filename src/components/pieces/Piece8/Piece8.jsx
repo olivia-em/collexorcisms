@@ -6,7 +6,7 @@ import useTrackPiece from "../../../useTrackPiece";
 import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 const Piece8 = () => {
-  const { getPieceVolume } = useAmbientAudio();
+  const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const { markCompleted, markInteracted, isCompleted } =
     useTrackPiece("objects_in_eleven");
 
@@ -67,11 +67,13 @@ const Piece8 = () => {
       );
       audio.preload = "auto";
       audio.volume = getPieceVolume("piece8");
+      const unregisterAudio = registerAudioElement("piece8", audio);
 
       const clearAudio = () => {
         activeAudiosRef.current = activeAudiosRef.current.filter(
           (a) => a !== audio,
         );
+        unregisterAudio();
         audio.onended = null;
         audio.src = "";
       };

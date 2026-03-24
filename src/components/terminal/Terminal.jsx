@@ -857,7 +857,7 @@ export default function Terminal({ onboardingDone = false }) {
           style={{
             position: "fixed",
             bottom: 24,
-            right: 24,
+            right: 55,
             zIndex: 9999,
             background: "#000",
             color: "#fff",

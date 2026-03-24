@@ -134,7 +134,7 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ThreeScroll({ setGoToPiece }) {
+export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
   const [cameraZ, setCameraZ] = useState(-200);
   const scrollRef = useRef(-200);
   const rafRef = useRef(null);
@@ -203,6 +203,10 @@ export default function ThreeScroll({ setGoToPiece }) {
       document.body.style.overflow = "";
     };
   }, [minZ, maxZ]);
+
+  useEffect(() => {
+    onCameraZChange?.(cameraZ);
+  }, [cameraZ, onCameraZChange]);
 
   return (
     <ScrollAtEndContext.Provider value={isAtFurthestScrollPoint}>

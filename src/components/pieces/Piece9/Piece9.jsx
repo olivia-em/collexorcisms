@@ -4,7 +4,7 @@ import useTrackPiece from "../../../useTrackPiece";
 import { useAmbientAudio } from "../../../AmbientAudioContext";
 
 const Piece9 = () => {
-  const { getPieceVolume } = useAmbientAudio();
+  const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const spokenWordRef = useRef(null);
   const montageRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -55,7 +55,16 @@ const Piece9 = () => {
   };
 
   useEffect(() => {
+    const unregisterSpoken = spokenWordRef.current
+      ? registerAudioElement("piece9", spokenWordRef.current)
+      : null;
+    const unregisterMontage = montageRef.current
+      ? registerAudioElement("piece9", montageRef.current)
+      : null;
+
     return () => {
+      unregisterSpoken?.();
+      unregisterMontage?.();
       if (spokenWordRef.current) {
         spokenWordRef.current.pause();
         spokenWordRef.current.currentTime = 0;
@@ -65,7 +74,7 @@ const Piece9 = () => {
         montageRef.current.currentTime = 0;
       }
     };
-  }, []);
+  }, [registerAudioElement]);
 
   return (
     <div className={styles.piece9Container} onMouseMove={handleMouseMove}>

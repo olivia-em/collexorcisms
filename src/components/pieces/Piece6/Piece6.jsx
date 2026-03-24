@@ -43,11 +43,12 @@ function groupWords(tokens) {
 }
 
 const Piece6 = () => {
-  const { getPieceVolume } = useAmbientAudio();
+  const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const [groups, setGroups] = useState([]);
   const [audioStarted, setAudioStarted] = useState(false);
   const canvasRef = useRef();
   const audioRef = useRef(null);
+  const unregisterAudioRef = useRef(null);
   const glitchRef = useRef(null);
   const audioStartedRef = useRef(false);
   const audioInitializedRef = useRef(false);
@@ -77,6 +78,8 @@ const Piece6 = () => {
       audio.pause();
       audio.currentTime = 0;
       audio.src = "";
+      unregisterAudioRef.current?.();
+      unregisterAudioRef.current = null;
       audioRef.current = null;
       audioInitializedRef.current = false;
       audioStartedRef.current = false;
@@ -94,6 +97,7 @@ const Piece6 = () => {
       const audio = new Audio(audioUrl);
       audio.preload = "auto";
       audio.volume = getPieceVolume("piece6");
+      unregisterAudioRef.current = registerAudioElement("piece6", audio);
       audio.onended = () => {
         markCompletedRef.current?.();
       };
