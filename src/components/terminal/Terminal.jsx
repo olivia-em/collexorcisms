@@ -456,6 +456,14 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
     console.log("[Terminal] 🔓 Dev passkey 3200 — forcing win state...");
     passkeyUsed.current = true;
 
+    if (typeof game.forceDevWinState === "function") {
+      game.forceDevWinState();
+      console.log(
+        "[Terminal] ✓ Win state set. Open terminal and type: obit Olivia",
+      );
+      return;
+    }
+
     PIECE_SLUGS.forEach((slug) => {
       game.markVisited(slug);
       game.markCompleted(slug);

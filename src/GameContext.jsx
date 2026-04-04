@@ -459,6 +459,35 @@ const GameContext = createContext(null);
 export function GameProvider({ children }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
+  const forceDevWinState = useCallback(() => {
+    const allPiecesTrue = Object.fromEntries(
+      PIECE_SLUGS.map((slug) => [slug, true]),
+    );
+    const allPeopleUnlocked = Object.fromEntries(
+      Object.keys(PERSON_PIECES).map((name) => [name, true]),
+    );
+
+    setState((s) => ({
+      ...s,
+      timerStartedAt: Date.now(),
+      visitedPieces: allPiecesTrue,
+      completedPieces: allPiecesTrue,
+      fullyCompletedPieces: allPiecesTrue,
+      piece7ClickCount: PIECE_INTERACTION_TOTALS.untitled,
+      pagesVisited129: ["1920", "2122", "2324", "192123", "202224"],
+      lofFilesOpened: ["LOF.JPG", "LOF.txt"],
+      mfFilesOpened: ["MF.txt", "MF1.png", "MF2.png", "MF3.JPG"],
+      shedLightRotation: Math.PI * 3,
+      obitErrorCounts: {},
+      oliviaErrorCount: 0,
+      obituariesUnlocked: allPeopleUnlocked,
+      objectsInElevenInteractions: PIECE_INTERACTION_TOTALS.objects_in_eleven,
+      secretRowsSubmitted: [0, 1, 2],
+      n23LinksClicked: ["thirty-one", "my-familiar", "monster", "secret"],
+      parasiteLinksClicked: ["oneside", "andtheother"],
+    }));
+  }, []);
+
   // ── Timer ────────────────────────────────────────────────────────────────
   const startTimer = useCallback(() => {
     setState((s) => {
@@ -1016,6 +1045,7 @@ export function GameProvider({ children }) {
   const value = {
     // raw state (read-only via useSyncExternalStore)
     state,
+    forceDevWinState,
     // timer
     startTimer,
     checkTimerReady,
