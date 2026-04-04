@@ -7,15 +7,26 @@ const Piece10 = () => {
   const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const spokenWordRef = useRef(null);
   const montageRef = useRef(null);
+  const completionEmittedRef = useRef(false);
+  const markCompletedRef = useRef(() => {});
+  const isCompletedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [spokenWordOpacity, setSpokenWordOpacity] = useState(0);
   const [montageOpacity, setMontageOpacity] = useState(1);
   const spokenWordVolumeCap = getPieceVolume("piece10");
-  const { markInteracted } = useTrackPiece("confessions");
+  const { markCompleted, isCompleted } = useTrackPiece("confessions");
+
+  useEffect(() => {
+    markCompletedRef.current = markCompleted;
+  }, [markCompleted]);
+
+  useEffect(() => {
+    isCompletedRef.current = isCompleted;
+  }, [isCompleted]);
+
   const handlePlay = async () => {
     try {
       setIsPlaying(true);
-      markInteracted();
       if (spokenWordRef.current) {
         await spokenWordRef.current.play();
       }
@@ -30,31 +41,27 @@ const Piece10 = () => {
 
   const handleVideoEnd = () => {
     setIsPlaying(false);
+    if (!completionEmittedRef.current && !isCompletedRef.current) {
+      completionEmittedRef.current = true;
+      markCompletedRef.current?.();
+    }
   };
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     const width = rect.width;
-    const height = rect.height;
     const normalizedX = x / width; // 0 to 1
-    const normalizedY = y / height; // 0 to 1
 
     setSpokenWordOpacity(normalizedX);
     setMontageOpacity(1 - normalizedX);
-
-    if (spokenWordRef.current) {
-      const muteThreshold = 0.1; // 10% from top
-      spokenWordRef.current.volume =
-        normalizedY < muteThreshold
-          ? 0
-          : ((normalizedY - muteThreshold) / (1 - muteThreshold)) *
-            spokenWordVolumeCap;
-    }
   };
 
   useEffect(() => {
+    if (spokenWordRef.current) {
+      spokenWordRef.current.volume = spokenWordVolumeCap;
+    }
+
     const unregisterSpoken = spokenWordRef.current
       ? registerAudioElement("piece10", spokenWordRef.current)
       : null;
@@ -74,7 +81,7 @@ const Piece10 = () => {
         montageRef.current.currentTime = 0;
       }
     };
-  }, [registerAudioElement]);
+  }, [registerAudioElement, spokenWordVolumeCap]);
 
   return (
     <div className={styles.piece10Container} onMouseMove={handleMouseMove}>

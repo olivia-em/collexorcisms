@@ -335,6 +335,8 @@ export default function Onboarding({ onComplete }) {
   const idCounter = useRef(0);
   const passkeyBuffer = useRef("");
   const PASSKEY = "0114";
+  // Per-step wrong-answer counts: stepErrorCounts.current[stepIndex] = n
+  const stepErrorCounts = useRef({});
 
   const nextId = () => {
     idCounter.current += 1;
@@ -592,9 +594,17 @@ export default function Onboarding({ onComplete }) {
           });
           if (step.isFinal) setTimeout(triggerComplete, 400);
         } else {
+          const stepIdx = term.stepIndex;
+          const prevCount = stepErrorCounts.current[stepIdx] ?? 0;
+          stepErrorCounts.current[stepIdx] = prevCount + 1;
+          // First wrong attempt: generic error. Second+: "did you mean …"
+          const errorContent =
+            prevCount === 0
+              ? `ERROR: answer not found — '${typed}'`
+              : `ERROR: did you mean '${step.command}'?`;
           const errorLine = {
             id: nextId(),
-            content: `ERROR: answer not found — '${typed}'`,
+            content: errorContent,
             lineType: "error",
           };
           setTerm((p) => ({
@@ -687,7 +697,7 @@ export default function Onboarding({ onComplete }) {
         inset: 0,
         backgroundColor: "#000",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "15px",
+        fontSize: "19px",
         fontWeight: 800,
         lineHeight: "1.6",
         overflowY: "auto",

@@ -3,9 +3,12 @@ import styles from "./Piece8.module.css";
 import { diffLines } from "./diffLines.js";
 import AnimatedLine from "./AnimatedLine.jsx";
 import useTrackPiece from "../../../useTrackPiece";
+import { useGame } from "../../../GameContext";
 import { useAmbientAudio } from "../../../AmbientAudioContext";
+import { createManagedAudio } from "../../../managedAudio";
 
 const Piece8 = () => {
+  const { trackObjectsInElevenStep, state } = useGame();
   const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const { markCompleted, markInteracted, isCompleted } =
     useTrackPiece("objects_in_eleven");
@@ -16,11 +19,11 @@ const Piece8 = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [audioFinished, setAudioFinished] = useState(false);
+  const hydratedFromStateRef = React.useRef(false);
 
   const firstClickAudioPlayedRef = React.useRef(false);
   const lastClickAudioPlayedRef = React.useRef(false);
-  const activeAudiosRef = React.useRef([]);
+  const activeAudioCleanupsRef = React.useRef([]);
   const completionEmittedRef = React.useRef(false);
 
   useEffect(() => {
@@ -42,62 +45,68 @@ const Piece8 = () => {
 
   useEffect(() => {
     return () => {
-      activeAudiosRef.current.forEach((audio) => {
-        audio.onended = null;
-        audio.pause();
-        audio.currentTime = 0;
-        audio.src = "";
-      });
-      activeAudiosRef.current = [];
+      activeAudioCleanupsRef.current.forEach((cleanup) => cleanup?.());
+      activeAudioCleanupsRef.current = [];
     };
   }, []);
 
   useEffect(() => {
     if (completionEmittedRef.current || isCompleted) return;
-    if (currentVersion >= 10 && audioFinished) {
+    if (currentVersion >= 10) {
       completionEmittedRef.current = true;
       markCompleted();
     }
-  }, [audioFinished, currentVersion, isCompleted, markCompleted]);
+  }, [currentVersion, isCompleted, markCompleted]);
 
-  const playObjectsAudio = useCallback(
-    (trackCompletion = false) => {
-      const audio = new Audio(
-        `${import.meta.env.BASE_URL}assets/piece8/objects.mp3`,
-      );
-      audio.preload = "auto";
-      audio.volume = getPieceVolume("piece8");
-      const unregisterAudio = registerAudioElement("piece8", audio);
+  useEffect(() => {
+    if (hydratedFromStateRef.current || allVersions.length === 0) return;
 
-      const clearAudio = () => {
-        activeAudiosRef.current = activeAudiosRef.current.filter(
-          (a) => a !== audio,
-        );
-        unregisterAudio();
-        audio.onended = null;
-        audio.src = "";
-      };
+    const savedSteps = Math.max(
+      0,
+      Math.min(11, Number(state.objectsInElevenInteractions) || 0),
+    );
 
-      if (trackCompletion) {
-        setAudioFinished(false);
-        audio.onended = () => {
-          setAudioFinished(true);
-          clearAudio();
-        };
+    if (savedSteps > 0) {
+      const savedVersion = savedSteps - 1;
+      const savedLines = allVersions[savedVersion] ?? [];
+      setCurrentVersion(savedVersion);
+      setOperations(diffLines([], savedLines));
+      setIsAnimating(true);
+      setCompletedLines(new Set());
+      setHasInteracted(true);
+      firstClickAudioPlayedRef.current = true;
+      if (savedVersion >= 10) {
+        lastClickAudioPlayedRef.current = true;
       }
+    }
 
-      activeAudiosRef.current.push(audio);
+    hydratedFromStateRef.current = true;
+  }, [allVersions, state.objectsInElevenInteractions]);
 
-      audio.play().catch(() => {
+  const playObjectsAudio = useCallback(() => {
+    const { audio, cleanup } = createManagedAudio({
+      src: `${import.meta.env.BASE_URL}assets/piece8/objects.mp3`,
+      volume: getPieceVolume("piece8"),
+      registerAudioElement: (element) =>
+        registerAudioElement("piece8", element),
+      onEnded: () => {
         clearAudio();
-      });
+      },
+    });
 
-      if (!trackCompletion) {
-        audio.onended = clearAudio;
-      }
-    },
-    [getPieceVolume],
-  );
+    const clearAudio = () => {
+      activeAudioCleanupsRef.current = activeAudioCleanupsRef.current.filter(
+        (fn) => fn !== cleanup,
+      );
+      cleanup();
+    };
+
+    activeAudioCleanupsRef.current.push(cleanup);
+
+    audio.play().catch(() => {
+      clearAudio();
+    });
+  }, [getPieceVolume, registerAudioElement]);
 
   const handleNext = () => {
     if (isAnimating || currentVersion >= 10 || allVersions.length === 0) return;
@@ -117,22 +126,20 @@ const Piece8 = () => {
     // so overlapping plays layer instead of restarting.
     if (!firstClickAudioPlayedRef.current && nextVersion === 0) {
       firstClickAudioPlayedRef.current = true;
-      playObjectsAudio(false);
+      playObjectsAudio();
     }
 
     if (!lastClickAudioPlayedRef.current && nextVersion === 10) {
       lastClickAudioPlayedRef.current = true;
-      playObjectsAudio(true);
+      playObjectsAudio();
     }
 
     const diff = diffLines(oldLines, newLines);
     setOperations(diff);
     setCurrentVersion(nextVersion);
+    trackObjectsInElevenStep(nextVersion + 1);
     setIsAnimating(true);
     setCompletedLines(new Set());
-
-    // Completion is now gated by BOTH conditions:
-    // 1) final version reached (index 10), and 2) audio finished.
   };
 
   const handleLineComplete = useCallback(

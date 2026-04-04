@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import styles from "./Onboarding.module.css"; // imports Jacquard12 font-face
 
-// ─── Script Definition ────────────────────────────────────────────────────────
-// Step types:
-//   'prompt'  — user must type `command` and press Enter
-//   'output'  — lines printed automatically, line by line
-//   'yn'      — waits for y/n keypress; y=advance, n=reset
-//   'link-sequence' — lines printed one at a time, each gated by clicking the link in the previous line
-
+// ─── Script ──────────────────────────────────────────────────────────────────
 const SCRIPT = [
   {
     type: "prompt",
@@ -35,23 +30,20 @@ const SCRIPT = [
     command: "cat collex.txt",
   },
   {
-    // 'timed-output' supports per-line delay and rich jsx content
-    // Empty string lines now render with minHeight so they show as real blank lines
     type: "timed-output",
     lines: [
       { text: "", delay: 400 },
       { text: "grief is a process", delay: 900 },
       { text: "you move back to move forward to move back again", delay: 500 },
-      { text: "", delay: 1300 }, // stanza break
+      { text: "", delay: 1300 },
       { text: "grief is a collection of unrelated things", delay: 1000 },
       { text: "when you put them", delay: 500 },
-      { text: "next to each other", delay: 500 },
-      { text: "on top of each other", delay: 500 },
-      { text: "torn apart, deprecated, and pieced together again", delay: 500 },
-      { text: "", delay: 1300 }, // stanza break
+      { rich: true, jsx: "stacking-block", delay: 500 },
+      { rich: true, jsx: "deprecated-line", delay: 1800 },
+      { text: "", delay: 1300 },
       { text: "\u2026there is meaning there", delay: 1000 },
       { text: "there is a processing\u2026", delay: 500 },
-      { text: "", delay: 1500 }, // stanza break — longer pause before questions
+      { text: "", delay: 1500 },
       { text: "But is there an end?", delay: 1300 },
       { text: "", delay: 1500 },
       { text: "Do you feel lost?", delay: 1300 },
@@ -66,9 +58,7 @@ const SCRIPT = [
       },
     ],
   },
-  {
-    type: "yn",
-  },
+  { type: "yn" },
   {
     type: "prompt",
     prefix: "olivialee@10-08-2001 collected_exorcisms % ",
@@ -80,29 +70,24 @@ const SCRIPT = [
     command: "ls",
   },
   {
-    // Each entry: text to display. If it has a `url`, render as a clickable link.
-    // The NEXT line in the sequence unlocks only after this line's link is clicked.
     type: "link-sequence",
     lines: [
       {
         text: "A younger version of me...",
-        url: "https://example.com/younger", // ← replace with real URL
+        url: "https://github.com/olivia-em/justBones",
         linkWord: "younger version",
       },
       {
         text: "felt what I could only fully describe now.",
-        url: "https://example.com/describe", // ← replace with real URL
+        url: "http://justbones.oliviaem.art/",
         linkWord: "fully describe",
       },
       {
         text: "I have been sitting on these feelings for quite some time...",
-        url: "https://example.com/sitting", // ← replace with real URL
+        url: "https://github.com/olivia-em/bittersweet",
         linkWord: "these feelings",
       },
-      {
-        text: "and now I'm ready to move with them beside me.",
-        url: null, // no link — just text, end of sequence
-      },
+      { text: "and now I'm ready to move with them beside me.", url: null },
     ],
   },
   {
@@ -110,12 +95,8 @@ const SCRIPT = [
     prefix: "olivialee@10-08-2001 justBones % ",
     command: "cat justBones.txt",
   },
+  { type: "output", lines: ["", "justBones", ""] },
   {
-    type: "output",
-    lines: ["", "justBones", ""],
-  },
-  {
-    // Print the whole poem at once as a single rich block
     type: "timed-output",
     lines: [
       { rich: true, jsx: "justBones-poem", delay: 300 },
@@ -132,10 +113,7 @@ const SCRIPT = [
     prefix: "olivialee@10-08-2001 collected_exorcisms % ",
     command: "cat collex.txt",
   },
-  {
-    type: "output",
-    lines: ["", "Are you ready?", ""],
-  },
+  { type: "output", lines: ["", "Are you ready?", ""] },
   {
     type: "prompt",
     prefix: "olivialee@10-08-2001 collected_exorcisms % ",
@@ -144,16 +122,93 @@ const SCRIPT = [
   },
 ];
 
-const LINE_DELAY = 80; // ms between output lines (plain output steps)
-const LINK_PAUSE = 600; // ms pause after clicking a link before next line prints
+const LINE_DELAY = 80;
+const LINK_PAUSE = 600;
+const GLITCH_COLORS = ["#c8c8c8", "#e05555", "#00ffff"];
+const GLITCH_FONTS = [
+  "'Courier New', Courier, monospace",
+  "'Jacquard12', serif",
+];
+const SYMBOLS = "!@#$%^&*()".split("");
 
-// Rich JSX content keyed by id — rendered inline in committed lines
+const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randSymbol = () => randOf(SYMBOLS);
+
+// ─── Stacking Block ───────────────────────────────────────────────────────────
+function StackingBlock() {
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowTop(true), 900);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <span style={{ display: "block" }}>
+      {showTop && (
+        <span
+          style={{
+            display: "block",
+            color: "#999",
+            animation: "slideDown 0.45s cubic-bezier(0.22,1,0.36,1) forwards",
+          }}
+        >
+          on top of each other
+        </span>
+      )}
+      <span style={{ display: "block", color: "#999" }}>
+        next to each other
+      </span>
+    </span>
+  );
+}
+
+// ─── Deprecated Flicker ───────────────────────────────────────────────────────
+function DeprecatedLine() {
+  const [opacity, setOpacity] = useState(0.08);
+  const [solid, setSolid] = useState(false);
+  useEffect(() => {
+    let elapsed = 0;
+    const totalMs = 2200;
+    let t;
+    const tick = () => {
+      const interval = 60 + Math.random() * 80;
+      elapsed += interval;
+      if (elapsed >= totalMs) {
+        setSolid(true);
+        return;
+      }
+      setOpacity(
+        Math.random() < 0.5 ? Math.random() * 0.12 : 0.2 + Math.random() * 0.55,
+      );
+      t = setTimeout(tick, interval);
+    };
+    t = setTimeout(tick, 60);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <span style={{ color: "#999" }}>
+      torn apart,{" "}
+      <span
+        style={{
+          opacity: solid ? 1 : opacity,
+          transition: solid ? "opacity 0.35s ease" : "none",
+        }}
+      >
+        deprecated
+      </span>
+      , and pieced together again
+    </span>
+  );
+}
+
+// ─── Rich Content ─────────────────────────────────────────────────────────────
 const RICH_CONTENT = {
+  "stacking-block": <StackingBlock />,
+  "deprecated-line": <DeprecatedLine />,
   "but-the-only-way": (
-    <span>
+    <span style={{ color: "#999" }}>
       But the only way{" "}
       <span
-        style={{ textDecoration: "line-through", textDecorationColor: "#999" }}
+        style={{ textDecoration: "line-through", textDecorationColor: "#666" }}
       >
         out
       </span>{" "}
@@ -162,7 +217,12 @@ const RICH_CONTENT = {
   ),
   "justBones-poem": (
     <span
-      style={{ display: "block", whiteSpace: "pre-wrap", lineHeight: "1.6" }}
+      style={{
+        display: "block",
+        whiteSpace: "pre-wrap",
+        lineHeight: "1.6",
+        color: "#999",
+      }}
     >
       {`pretty please, just let me rot
 until I go unknown
@@ -180,25 +240,21 @@ they'll strip me down
 til' i'm just bones
 
 and then from there,
-we'll go…`}
+we'll go\u2026`}
     </span>
   ),
 };
 
-// Render a link-sequence line: wraps only the linkWord in an anchor, rest is plain text
+// ─── Link Line ────────────────────────────────────────────────────────────────
 function LinkLine({ line, onClick }) {
   const text = line.content ?? line.text ?? "";
-  if (!line.url || !line.linkWord) {
+  if (!line.url || !line.linkWord)
     return <span style={{ color: "#999" }}>{text}</span>;
-  }
   const idx = text.indexOf(line.linkWord);
   if (idx === -1) return <span style={{ color: "#999" }}>{text}</span>;
-  const before = text.slice(0, idx);
-  const word = text.slice(idx, idx + line.linkWord.length);
-  const after = text.slice(idx + line.linkWord.length);
   return (
     <span style={{ color: "#999" }}>
-      {before}
+      {text.slice(0, idx)}
       <span
         onClick={onClick}
         style={{
@@ -209,36 +265,71 @@ function LinkLine({ line, onClick }) {
           transition: "color 0.3s",
         }}
       >
-        {word}
+        {text.slice(idx, idx + line.linkWord.length)}
       </span>
-      {after}
+      {text.slice(idx + line.linkWord.length)}
     </span>
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Glitched Text ────────────────────────────────────────────────────────────
+// Renders a plain string with per-character glitch state applied in-place.
+// glitchLevel 0–1: fraction of chars affected. symbolLevel 0–1: fraction replaced w/ symbols.
+function GlitchedText({ text, glitchLevel, symbolLevel, baseColor }) {
+  // Each char gets a stable random seed so flicker doesn't reassign every render
+  const seedsRef = useRef([]);
+  if (seedsRef.current.length !== text.length) {
+    seedsRef.current = Array.from({ length: text.length }, () => Math.random());
+  }
+  const seeds = seedsRef.current;
 
+  return (
+    <>
+      {Array.from(text).map((ch, i) => {
+        const isActive = seeds[i] < glitchLevel;
+        const isSymbol = isActive && seeds[i] < symbolLevel;
+        const color = isActive ? randOf(GLITCH_COLORS) : baseColor;
+        const font = isActive
+          ? randOf(GLITCH_FONTS)
+          : "'Courier New', Courier, monospace";
+        const display = isSymbol && ch.trim() !== "" ? randSymbol() : ch;
+        return (
+          <span key={i} style={{ color, fontFamily: font }}>
+            {display}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function buildInitialTermState() {
   return {
-    // Array of rendered line objects:
-    // { id, content: string | jsx, type: 'output'|'prompt'|'yn-prompt'|'link' }
     lines: [],
     stepIndex: 0,
-    // sub-state for current step
-    phase: "idle", // 'printing' | 'waiting-input' | 'waiting-yn' | 'waiting-link' | 'done'
-    outputLineIndex: 0, // for output steps
-    linkLineIndex: 0, // for link-sequence steps
+    phase: "idle",
+    outputLineIndex: 0,
+    linkLineIndex: 0,
     input: "",
     error: null,
   };
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Onboarding({ onComplete }) {
   const [visible, setVisible] = useState(true);
-  const [fadingOut, setFadingOut] = useState(false);
+  const [glitching, setGlitching] = useState(false);
+  // glitchLevel: 0–1 fraction of chars that are active
+  // symbolLevel: 0–1 fraction of active chars replaced with symbols
+  // overlayOpacity: drives the stutter-out
+  const [glitchLevel, setGlitchLevel] = useState(0);
+  const [symbolLevel, setSymbolLevel] = useState(0);
+  const [overlayOpacity, setOverlayOpacity] = useState(1);
+  // tick counter: increments on each glitch interval to force re-render of GlitchedText seeds
+  const [glitchTick, setGlitchTick] = useState(0);
   const [term, setTerm] = useState(buildInitialTermState);
+
   const inputRef = useRef(null);
   const bottomRef = useRef(null);
   const idCounter = useRef(0);
@@ -250,28 +341,12 @@ export default function Onboarding({ onComplete }) {
     return idCounter.current;
   };
 
-  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [term.lines, term.phase]);
-
-  // Focus input
   useEffect(() => {
-    if (term.phase === "waiting-input") {
-      inputRef.current?.focus();
-    }
+    if (term.phase === "waiting-input") inputRef.current?.focus();
   }, [term.phase]);
-
-  // ── Trigger fade-out and complete
-  const triggerComplete = useCallback(() => {
-    setFadingOut(true);
-    setTimeout(() => {
-      setVisible(false);
-      onComplete?.();
-    }, 800);
-  }, [onComplete]);
-
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
@@ -281,9 +356,67 @@ export default function Onboarding({ onComplete }) {
     };
   }, []);
 
-  // ── Dev passkey: typing "0114" at any point triggers immediate fade
+  // ── Glitch sequence: ramp up then stutter out
+  const triggerComplete = useCallback(() => {
+    setGlitching(true);
+    const timers = [];
+
+    // Phase 1 (0–800ms): fonts+colors only, sparse, slow tick
+    // Phase 2 (800–1800ms): more chars, some symbols, medium tick
+    // Phase 3 (1800–3000ms): most chars, heavy symbols, fast tick
+
+    const phases = [
+      { glitchLevel: 0.06, symbolLevel: 0.0, interval: 250, duration: 800 },
+      { glitchLevel: 0.35, symbolLevel: 0.12, interval: 140, duration: 1000 },
+      { glitchLevel: 0.85, symbolLevel: 0.55, interval: 70, duration: 1200 },
+    ];
+
+    let elapsed = 0;
+    let tickInterval = null;
+
+    const startTick = (interval) => {
+      if (tickInterval) clearInterval(tickInterval);
+      tickInterval = setInterval(() => setGlitchTick((n) => n + 1), interval);
+    };
+
+    phases.forEach((phase) => {
+      timers.push(
+        setTimeout(() => {
+          setGlitchLevel(phase.glitchLevel);
+          setSymbolLevel(phase.symbolLevel);
+          startTick(phase.interval);
+        }, elapsed),
+      );
+      elapsed += phase.duration;
+    });
+
+    // Stutter out after all phases
+    const stutterSeq = [1, 0, 1, 0, 0.7, 0, 0.4, 0, 1, 0];
+    stutterSeq.forEach((op, i) => {
+      timers.push(
+        setTimeout(
+          () => {
+            setOverlayOpacity(op);
+            if (i === stutterSeq.length - 1) {
+              clearInterval(tickInterval);
+              setVisible(false);
+              onComplete?.();
+            }
+          },
+          elapsed + i * 80,
+        ),
+      );
+    });
+
+    return () => {
+      timers.forEach(clearTimeout);
+      clearInterval(tickInterval);
+    };
+  }, [onComplete]);
+
+  // ── Dev passkey
   useEffect(() => {
-    const handlePasskey = (e) => {
+    const onKey = (e) => {
       passkeyBuffer.current = (passkeyBuffer.current + e.key).slice(
         -PASSKEY.length,
       );
@@ -292,103 +425,97 @@ export default function Onboarding({ onComplete }) {
         triggerComplete();
       }
     };
-    window.addEventListener("keydown", handlePasskey);
-    return () => window.removeEventListener("keydown", handlePasskey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [triggerComplete]);
 
-  // ── Advance to next step
+  // ── Advance step
   const advanceStep = useCallback((fromState) => {
     const nextIndex = fromState.stepIndex + 1;
-    if (nextIndex >= SCRIPT.length) {
-      return { ...fromState, phase: "done" };
-    }
+    if (nextIndex >= SCRIPT.length) return { ...fromState, phase: "done" };
     const step = SCRIPT[nextIndex];
-    let newState = { ...fromState, stepIndex: nextIndex, error: null };
-
-    if (step.type === "output") {
-      newState.phase = "printing";
-      newState.outputLineIndex = 0;
-    } else if (step.type === "timed-output") {
-      newState.phase = "printing";
-      newState.outputLineIndex = 0;
+    let s = { ...fromState, stepIndex: nextIndex, error: null };
+    if (step.type === "output" || step.type === "timed-output") {
+      s.phase = "printing";
+      s.outputLineIndex = 0;
     } else if (step.type === "prompt") {
-      newState.phase = "waiting-input";
-      newState.input = "";
+      s.phase = "waiting-input";
+      s.input = "";
     } else if (step.type === "yn") {
-      newState.phase = "waiting-yn";
+      s.phase = "waiting-yn";
     } else if (step.type === "link-sequence") {
-      newState.phase = "printing"; // print first line immediately
-      newState.linkLineIndex = 0;
+      s.phase = "printing";
+      s.linkLineIndex = 0;
     }
-
-    return newState;
+    return s;
   }, []);
 
-  // ── Reset everything (n pressed)
   const resetAll = useCallback(() => {
     idCounter.current = 0;
     setTerm({ ...buildInitialTermState(), phase: "waiting-input" });
   }, []);
 
-  // ── Output line printer
+  // ── Printer
   useEffect(() => {
     if (term.phase !== "printing") return;
     const step = SCRIPT[term.stepIndex];
 
     if (step.type === "output") {
       if (term.outputLineIndex >= step.lines.length) {
-        // Done printing — advance
-        setTerm((prev) => advanceStep(prev));
+        setTerm((p) => advanceStep(p));
         return;
       }
-      const timer = setTimeout(() => {
-        const lineText = step.lines[term.outputLineIndex];
-        setTerm((prev) => ({
-          ...prev,
+      const t = setTimeout(() => {
+        setTerm((p) => ({
+          ...p,
           lines: [
-            ...prev.lines,
-            { id: nextId(), content: lineText, lineType: "output" },
+            ...p.lines,
+            {
+              id: nextId(),
+              content: step.lines[term.outputLineIndex],
+              lineType: "output",
+            },
           ],
-          outputLineIndex: prev.outputLineIndex + 1,
+          outputLineIndex: p.outputLineIndex + 1,
         }));
       }, LINE_DELAY);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
 
     if (step.type === "timed-output") {
       if (term.outputLineIndex >= step.lines.length) {
-        setTerm((prev) => advanceStep(prev));
+        setTerm((p) => advanceStep(p));
         return;
       }
       const entry = step.lines[term.outputLineIndex];
-      const timer = setTimeout(() => {
-        setTerm((prev) => ({
-          ...prev,
+      const t = setTimeout(() => {
+        setTerm((p) => ({
+          ...p,
           lines: [
-            ...prev.lines,
+            ...p.lines,
             {
               id: nextId(),
               content: entry.rich ? entry.jsx : entry.text,
               lineType: entry.rich ? "rich" : "output",
             },
           ],
-          outputLineIndex: prev.outputLineIndex + 1,
+          outputLineIndex: p.outputLineIndex + 1,
         }));
       }, entry.delay ?? LINE_DELAY);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
 
     if (step.type === "link-sequence") {
       if (term.linkLineIndex >= step.lines.length) {
-        setTerm((prev) => advanceStep(prev));
+        setTerm((p) => advanceStep(p));
         return;
       }
       const entry = step.lines[term.linkLineIndex];
-      const timer = setTimeout(() => {
-        setTerm((prev) => ({
-          ...prev,
+      const t = setTimeout(() => {
+        setTerm((p) => ({
+          ...p,
           lines: [
-            ...prev.lines,
+            ...p.lines,
             {
               id: nextId(),
               content: entry.text,
@@ -399,10 +526,10 @@ export default function Onboarding({ onComplete }) {
             },
           ],
           phase: entry.url ? "waiting-link" : "printing",
-          linkLineIndex: prev.linkLineIndex + 1,
+          linkLineIndex: p.linkLineIndex + 1,
         }));
       }, LINE_DELAY);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
   }, [
     term.phase,
@@ -412,37 +539,30 @@ export default function Onboarding({ onComplete }) {
     advanceStep,
   ]);
 
-  // ── Init: start first step
   useEffect(() => {
-    const step = SCRIPT[0];
-    if (step.type === "prompt") {
-      setTerm((prev) => ({ ...prev, phase: "waiting-input" }));
-    }
+    if (SCRIPT[0].type === "prompt")
+      setTerm((p) => ({ ...p, phase: "waiting-input" }));
   }, []);
 
-  // ── Handle link click
   const handleLinkClick = useCallback((lineId, url) => {
     window.open(url, "_blank", "noopener,noreferrer");
-    // Mark link as clicked and wait, then print next line
-    setTerm((prev) => {
-      const updatedLines = prev.lines.map((l) =>
+    setTerm((p) => ({
+      ...p,
+      lines: p.lines.map((l) =>
         l.id === lineId ? { ...l, clicked: true } : l,
-      );
-      return { ...prev, lines: updatedLines };
-    });
+      ),
+    }));
     setTimeout(() => {
-      setTerm((prev) => {
-        if (prev.phase !== "waiting-link") return prev;
-        return { ...prev, phase: "printing" };
-      });
+      setTerm((p) =>
+        p.phase !== "waiting-link" ? p : { ...p, phase: "printing" },
+      );
     }, LINK_PAUSE);
   }, []);
 
-  // ── Handle text input
   const handleInput = useCallback(
     (e) => {
       if (term.phase !== "waiting-input") return;
-      setTerm((prev) => ({ ...prev, input: e.target.value, error: null }));
+      setTerm((p) => ({ ...p, input: e.target.value, error: null }));
     },
     [term.phase],
   );
@@ -450,59 +570,41 @@ export default function Onboarding({ onComplete }) {
   const handleKeyDown = useCallback(
     (e) => {
       const step = SCRIPT[term.stepIndex];
-
       if (term.phase === "waiting-input" && e.key === "Enter") {
         e.preventDefault();
         const typed = term.input.trim();
         const expected = step.command.trim();
-
-        // Echo the prompt line as committed output
         const promptLine = {
           id: nextId(),
           content: step.prefix + typed,
           lineType: "committed-prompt",
         };
-
         if (typed.toLowerCase() === expected.toLowerCase()) {
-          // Correct
-          setTerm((prev) => {
-            const newState = advanceStep({
-              ...prev,
-              lines: [...prev.lines, promptLine],
+          setTerm((p) => {
+            if (step.isFinal)
+              return { ...p, lines: [...p.lines, promptLine], phase: "done" };
+            return advanceStep({
+              ...p,
+              lines: [...p.lines, promptLine],
               input: "",
               error: null,
             });
-
-            // If this was the final step
-            if (step.isFinal) {
-              return {
-                ...prev,
-                lines: [...prev.lines, promptLine],
-                phase: "done",
-              };
-            }
-            return newState;
           });
-
-          if (step.isFinal) {
-            setTimeout(triggerComplete, 400);
-          }
+          if (step.isFinal) setTimeout(triggerComplete, 400);
         } else {
-          // Wrong — show error
           const errorLine = {
             id: nextId(),
             content: `ERROR: answer not found — '${typed}'`,
             lineType: "error",
           };
-          setTerm((prev) => ({
-            ...prev,
-            lines: [...prev.lines, promptLine, errorLine],
+          setTerm((p) => ({
+            ...p,
+            lines: [...p.lines, promptLine, errorLine],
             input: "",
             error: true,
           }));
         }
       }
-
       if (term.phase === "waiting-yn") {
         if (e.key === "y" || e.key === "Y") {
           e.preventDefault();
@@ -512,8 +614,8 @@ export default function Onboarding({ onComplete }) {
             content: "olivialee@10-08-2001 collected_exorcisms % y",
             lineType: "committed-prompt",
           };
-          setTerm((prev) =>
-            advanceStep({ ...prev, lines: [...prev.lines, yLine], input: "" }),
+          setTerm((p) =>
+            advanceStep({ ...p, lines: [...p.lines, yLine], input: "" }),
           );
         } else if (e.key === "n" || e.key === "N") {
           e.preventDefault();
@@ -539,60 +641,79 @@ export default function Onboarding({ onComplete }) {
     term.phase === "waiting-input" && currentStep?.type === "prompt";
   const showYN = term.phase === "waiting-yn";
 
+  // ── Renders a line's text content with glitch applied if active
+  const renderLineContent = (line) => {
+    if (line.lineType === "link") {
+      return (
+        <LinkLine
+          line={line}
+          onClick={() => !line.clicked && handleLinkClick(line.id, line.url)}
+        />
+      );
+    }
+    if (line.lineType === "rich") {
+      return RICH_CONTENT[line.content] ?? null;
+    }
+    // Plain text — wrap in GlitchedText when glitching is active
+    const baseColor =
+      line.lineType === "error"
+        ? "#e05555"
+        : line.lineType === "committed-prompt"
+          ? "#c8c8c8"
+          : "#999";
+    if (
+      glitching &&
+      typeof line.content === "string" &&
+      line.content.trim() !== ""
+    ) {
+      return (
+        // key includes glitchTick so seeds re-roll each tick
+        <GlitchedText
+          key={glitchTick}
+          text={line.content}
+          glitchLevel={glitchLevel}
+          symbolLevel={symbolLevel}
+          baseColor={baseColor}
+        />
+      );
+    }
+    return <span style={{ color: baseColor }}>{line.content}</span>;
+  };
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
         backgroundColor: "#000",
-        color: "#c8c8c8",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "14px",
+        fontSize: "19px",
+        fontWeight: 800,
         lineHeight: "1.6",
         overflowY: "auto",
         overflowX: "hidden",
         padding: "24px 32px 48px",
         boxSizing: "border-box",
-        opacity: fadingOut ? 0 : 1,
-        transition: "opacity 0.8s ease",
         cursor: "text",
         zIndex: 9999,
+        opacity: glitching ? overlayOpacity : 1,
       }}
       onClick={() => inputRef.current?.focus()}
     >
-      {/* Committed lines */}
       {term.lines.map((line) => (
         <div
           key={line.id}
           style={{
             marginBottom: "2px",
             minHeight: "1.6em",
-            color:
-              line.lineType === "error"
-                ? "#e05555"
-                : line.lineType === "committed-prompt"
-                  ? "#c8c8c8"
-                  : "#999",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
           }}
         >
-          {line.lineType === "link" ? (
-            <LinkLine
-              line={line}
-              onClick={() =>
-                !line.clicked && handleLinkClick(line.id, line.url)
-              }
-            />
-          ) : line.lineType === "rich" ? (
-            (RICH_CONTENT[line.content] ?? null)
-          ) : (
-            line.content
-          )}
+          {renderLineContent(line)}
         </div>
       ))}
 
-      {/* Active prompt line */}
       {showPrompt && (
         <div
           style={{
@@ -604,7 +725,6 @@ export default function Onboarding({ onComplete }) {
           <span style={{ color: "#c8c8c8", whiteSpace: "pre" }}>
             {currentStep.prefix}
           </span>
-          {/* Ghost hint */}
           <span
             style={{
               position: "absolute",
@@ -617,7 +737,6 @@ export default function Onboarding({ onComplete }) {
           >
             {currentStep.command}
           </span>
-          {/* Actual typed text */}
           <span
             style={{
               color: "#c8c8c8",
@@ -642,7 +761,6 @@ export default function Onboarding({ onComplete }) {
         </div>
       )}
 
-      {/* y/n prompt indicator */}
       {showYN && (
         <div style={{ display: "flex", alignItems: "baseline" }}>
           <span style={{ color: "#c8c8c8", whiteSpace: "pre" }}>
@@ -663,7 +781,6 @@ export default function Onboarding({ onComplete }) {
         </div>
       )}
 
-      {/* Hidden input to capture keystrokes */}
       <input
         ref={inputRef}
         value={term.input}
@@ -688,7 +805,11 @@ export default function Onboarding({ onComplete }) {
       <style>{`
         @keyframes blink {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+          50%       { opacity: 0; }
+        }
+        @keyframes slideDown {
+          from { transform: translateY(-1.6em); opacity: 0; }
+          to   { transform: translateY(0);      opacity: 1; }
         }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #000; }

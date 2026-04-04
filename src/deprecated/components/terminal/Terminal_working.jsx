@@ -18,7 +18,7 @@ import {
 import GlitchText from "../GlitchText";
 
 const PROMPT_PREFIX = "olivialee@10-08-2001 % ";
-const COLS = 4; // grid columns for ls and find
+const COLS = 4;
 
 const BOOT_STEPS = [
   {
@@ -37,7 +37,7 @@ const BOOT_STEPS = [
   {
     command: "help me please",
     hint: "help me please",
-    response: [], // help lines rendered specially — built in handleBootSubmit
+    response: [],
   },
 ];
 
@@ -63,36 +63,52 @@ function buildAcrostic(exorcismLines) {
   });
 }
 
-// Build grid rows from an array of strings, COLS wide
-function toGrid(items, cols = COLS) {
-  const colW = Math.max(...items.map((s) => s.length)) + 3;
-  const rows = [];
-  for (let i = 0; i < items.length; i += cols) {
-    rows.push(
-      items
-        .slice(i, i + cols)
-        .map((s) => s.padEnd(colW))
-        .join(""),
-    );
+// ─── Glitch constants — matching Onboarding exactly ──────────────────────────
+const GLITCH_COLORS = ["#c8c8c8", "#e05555", "#00ffff"];
+const GLITCH_FONTS = [
+  "'Courier New', Courier, monospace",
+  "'Jacquard12', serif",
+];
+const SYMBOLS = "!@#$%^&*()".split("");
+const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randSymbol = () => randOf(SYMBOLS);
+
+// ─── GlitchedText — per-character font/color/symbol (matches Onboarding) ─────
+function GlitchedText({ text, glitchLevel, symbolLevel, baseColor }) {
+  const seedsRef = useRef([]);
+  if (seedsRef.current.length !== text.length) {
+    seedsRef.current = Array.from({ length: text.length }, () => Math.random());
   }
-  return rows;
+  const seeds = seedsRef.current;
+  return (
+    <>
+      {Array.from(text).map((ch, i) => {
+        const isActive = seeds[i] < glitchLevel;
+        const isSymbol = isActive && seeds[i] < symbolLevel;
+        const color = isActive ? randOf(GLITCH_COLORS) : baseColor;
+        const font = isActive
+          ? randOf(GLITCH_FONTS)
+          : "'Courier New', Courier, monospace";
+        const display = isSymbol && ch.trim() !== "" ? randSymbol() : ch;
+        return (
+          <span key={i} style={{ color, fontFamily: font }}>
+            {display}
+          </span>
+        );
+      })}
+    </>
+  );
 }
 
 // ─── Help line renderer ───────────────────────────────────────────────────────
-// Renders: "ls : show directory contents" with cmd+colon white, desc white,
-// "who" struck-through, "# ex. ..." gray italic
 function HelpLineContent({ raw }) {
-  // Format: "cmd : description # ex. example"
   const hashIdx = raw.indexOf(" # ");
   const main = hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
-  const example = hashIdx >= 0 ? raw.slice(hashIdx + 3) : null; // "ex. cd justBones"
-
-  // Split "cmd : rest"
+  const example = hashIdx >= 0 ? raw.slice(hashIdx + 3) : null;
   const colonIdx = main.indexOf(" : ");
   const cmd = colonIdx >= 0 ? main.slice(0, colonIdx) : main;
   const desc = colonIdx >= 0 ? main.slice(colonIdx + 3) : "";
 
-  // Handle "who" strikethrough in find line
   const renderDesc = (text) => {
     const whoIdx = text.indexOf("who");
     if (whoIdx === -1) return <span>{text}</span>;
@@ -133,7 +149,6 @@ const HELP_LINES_RAW = [
   "help : show terminal commands",
 ];
 
-// Olivia final obituary — prints after the loop + glitch sequence
 const OLIVIA_FINAL_ERRORS = [
   "ERROR: I told you this wasn\u2019t some game you could win.",
   "ERROR: You\u2019ve focused too much on the mechanics.",
@@ -164,6 +179,16 @@ const OLIVIA_FINAL_ERRORS = [
   "ERROR: It\u2019ll just get easier to do it.",
 ];
 
+const OLIVIA_ONLY_PIECE_ERRORS = [
+  "ERROR: Obituary unfinished.",
+  "ERROR: This one is just for you\u2026 and it\u2019s not ready.",
+  "ERROR: This one is just for you\u2026 and you\u2019re not ready.",
+  "ERROR: Olivia, your obituary is still being written.",
+];
+
+// Consistent delay for all error lines
+const ERROR_DELAY = 1500;
+
 // ─── LockedName with glitch ───────────────────────────────────────────────────
 function LockedObitName({ name }) {
   const [gone, setGone] = useState(false);
@@ -179,7 +204,7 @@ function LockedObitName({ name }) {
       mode="auto"
       autoInterval={200}
       intensity="high"
-      colors={["#333", "#222", "#444"]}
+      colors={["red", "cyan", "#999"]}
       style={{
         textDecoration: "line-through",
         textDecorationColor: "#444",
@@ -201,8 +226,21 @@ export default function Terminal({ onboardingDone = false }) {
   const [bootStep, setBootStep] = useState(0);
   const [isPrinting, setIsPrinting] = useState(false);
   const [exorcismLines, setExorcismLines] = useState([]);
-  // Glitch overlay: when truthy, shows full-screen glitch-to-symbols effect
-  const [glitchOverlay, setGlitchOverlay] = useState(null); // null | "scatter" | "symbols"
+
+  // ── Glitch state — mirrors Onboarding exactly ──────────────────────────────
+  // glitching: enables per-character GlitchedText on all lines
+  // glitchLevel/symbolLevel: passed to GlitchedText
+  // glitchTick: increments on interval so seeds re-roll → flicker effect
+  // overlayOpacity: controls terminal window opacity during stutter-out
+  const [glitching, setGlitching] = useState(false);
+  const [glitchLevel, setGlitchLevel] = useState(0);
+  const [symbolLevel, setSymbolLevel] = useState(0);
+  const [glitchTick, setGlitchTick] = useState(0);
+  const [overlayOpacity, setOverlayOpacity] = useState(1);
+
+  // symbolsOverlay: full-screen !@#$%^&*() flood (separate from per-char glitch)
+  const [symbolsOverlay, setSymbolsOverlay] = useState(false);
+  const [symbolsTick, setSymbolsTick] = useState(0);
 
   const idRef = useRef(0);
   const inputRef = useRef(null);
@@ -212,6 +250,19 @@ export default function Terminal({ onboardingDone = false }) {
   const oliviaActiveRef = useRef(false);
   const oliviaTimersRef = useRef([]);
   const hasOpenedRef = useRef(false);
+  const oliviaOnlyPieceErrorIdxRef = useRef(0);
+  const passkeyBuffer = useRef("");
+  const passkeyUsed = useRef(false);
+  const PASSKEY = "3200";
+
+  const getNextOliviaOnlyPieceError = useCallback(() => {
+    const msg =
+      OLIVIA_ONLY_PIECE_ERRORS[
+        oliviaOnlyPieceErrorIdxRef.current % OLIVIA_ONLY_PIECE_ERRORS.length
+      ];
+    oliviaOnlyPieceErrorIdxRef.current += 1;
+    return msg;
+  }, []);
 
   const nextId = () => {
     idRef.current += 1;
@@ -227,24 +278,59 @@ export default function Terminal({ onboardingDone = false }) {
       .catch(console.error);
   }, []);
 
-  // Scroll to bottom on new content
   useLayoutEffect(() => {
     if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [lines, phase]);
 
-  // Scroll to bottom when window re-opens
   useLayoutEffect(() => {
-    if (isOpen && scrollRef.current) {
+    if (isOpen && scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && !isPrinting && inputRef.current) {
+    if (isOpen && !isPrinting && inputRef.current)
       setTimeout(() => inputRef.current?.focus(), 50);
-    }
   }, [isOpen, isPrinting]);
+
+  // ── Dev passkey: type "3200" anywhere → instant win state ────────────────
+  useEffect(() => {
+    const onKey = (e) => {
+      passkeyBuffer.current = (passkeyBuffer.current + e.key).slice(
+        -PASSKEY.length,
+      );
+      if (passkeyBuffer.current === PASSKEY) {
+        passkeyBuffer.current = "";
+        console.log("[Terminal] 🔓 Dev passkey 3200 — forcing win state...");
+
+        // Bypass timer check
+        passkeyUsed.current = true;
+
+        // Mark every piece visited + completed
+        PIECE_SLUGS.forEach((slug) => {
+          game.markVisited(slug);
+          game.markCompleted(slug);
+        });
+
+        // Satisfy all piece-specific counters
+        for (let i = 0; i < 11; i++) game.incrementPiece7();
+        ["1920", "2122", "2324", "192123", "202224"].forEach((p) =>
+          game.trackPage129(p),
+        );
+        ["LOF.JPG", "LOF.txt"].forEach((f) => game.trackLofFile(f));
+        ["MF.txt", "MF1.png", "MF2.png", "MF3.JPG"].forEach((f) =>
+          game.trackMfFile(f),
+        );
+        game.trackShedLightRotation(Math.PI * 3);
+
+        console.log(
+          "[Terminal] ✓ Win state set. Open terminal and type: obit Olivia",
+        );
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [game]);
 
   // ── Queued printer ────────────────────────────────────────────────────────
   const flushQueue = useCallback(() => {
@@ -291,7 +377,7 @@ export default function Terminal({ onboardingDone = false }) {
     [printLine],
   );
 
-  // ── Olivia loop (5-second looping acrostic phase) ────────────────────────
+  // ── Olivia loop ───────────────────────────────────────────────────────────
   const stopOliviaLoop = useCallback(() => {
     oliviaActiveRef.current = false;
     oliviaTimersRef.current.forEach(clearTimeout);
@@ -301,7 +387,7 @@ export default function Terminal({ onboardingDone = false }) {
   const runOliviaLoop = useCallback(async () => {
     oliviaActiveRef.current = true;
 
-    // Print the initial acrostic
+    // Print initial acrostic, saving line IDs so we can swap them in-place
     const initialAcrostic = buildAcrostic(exorcismLines);
     const lineIds = [];
     for (const l of initialAcrostic) {
@@ -311,88 +397,144 @@ export default function Terminal({ onboardingDone = false }) {
       setLines((prev) => [...prev, { id, text: l, type: "obit-text" }]);
       await new Promise((r) => setTimeout(r, 200));
     }
-
-    // Add blank line
     const blankId = nextId();
     setLines((prev) => [...prev, { id: blankId, text: "", type: "output" }]);
-    await new Promise((r) => setTimeout(r, 100));
 
-    // Now loop: continuously replace those 6 lines with new random selections
+    // Swap acrostic lines in-place every 300ms
     const loopUpdate = () => {
       if (!oliviaActiveRef.current) return;
       const newAcrostic = buildAcrostic(exorcismLines);
-      setLines((prev) => {
-        return prev.map((line) => {
+      setLines((prev) =>
+        prev.map((line) => {
           const idx = lineIds.indexOf(line.id);
-          if (idx !== -1) {
-            // This is one of the acrostic lines - replace its text
-            return { ...line, text: newAcrostic[idx] };
-          }
-          return line;
-        });
-      });
-
-      // Schedule next update
+          return idx !== -1 ? { ...line, text: newAcrostic[idx] } : line;
+        }),
+      );
       const t = setTimeout(loopUpdate, 300);
       oliviaTimersRef.current.push(t);
     };
-
-    // Start the loop
     const t = setTimeout(loopUpdate, 300);
     oliviaTimersRef.current.push(t);
   }, [exorcismLines]);
 
+  // ── Glitch phase runner — mirrors Onboarding's triggerComplete ────────────
+  // phases: [{ glitchLevel, symbolLevel, interval, duration }]
+  // If doStutter=true, runs the Onboarding stutter-out sequence afterward
+  // and calls onStutterDone when the last stutter frame fires.
+  const runGlitchPhases = useCallback(
+    (phases, { doStutter = false, onStutterDone = null } = {}) => {
+      return new Promise((resolve) => {
+        const timers = [];
+        let tickInterval = null;
+        let elapsed = 0;
+
+        setGlitching(true);
+        setOverlayOpacity(1);
+
+        const startTick = (interval) => {
+          if (tickInterval) clearInterval(tickInterval);
+          tickInterval = setInterval(
+            () => setGlitchTick((n) => n + 1),
+            interval,
+          );
+        };
+
+        phases.forEach((p) => {
+          timers.push(
+            setTimeout(() => {
+              setGlitchLevel(p.glitchLevel);
+              setSymbolLevel(p.symbolLevel);
+              startTick(p.interval);
+            }, elapsed),
+          );
+          elapsed += p.duration;
+        });
+
+        if (doStutter) {
+          // Stutter sequence identical to Onboarding: [1,0,1,0,0.7,0,0.4,0,1,0] at 80ms steps
+          const stutterSeq = [1, 0, 1, 0, 0.7, 0, 0.4, 0, 1, 0];
+          stutterSeq.forEach((op, i) => {
+            timers.push(
+              setTimeout(
+                () => {
+                  setOverlayOpacity(op);
+                  if (i === stutterSeq.length - 1) {
+                    clearInterval(tickInterval);
+                    setGlitching(false);
+                    setGlitchLevel(0);
+                    setSymbolLevel(0);
+                    setOverlayOpacity(1);
+                    onStutterDone?.();
+                    resolve();
+                  }
+                },
+                elapsed + i * 80,
+              ),
+            );
+          });
+        } else {
+          timers.push(
+            setTimeout(() => {
+              clearInterval(tickInterval);
+              resolve();
+            }, elapsed),
+          );
+        }
+      });
+    },
+    [],
+  );
+
   // ── Olivia final sequence ─────────────────────────────────────────────────
-  // Phase: print acrostic → glitch in place 5s → scatter → symbols → ERROR lines → glitch flash → full reset
   const runOliviaFinalSequence = useCallback(async () => {
-    // 1. Stop any active timers
     stopOliviaLoop();
     setPhase("olivia-final");
 
-    // 2. Glitch the existing acrostic lines in place with scatter effect
-    setGlitchOverlay("scatter");
-    await new Promise((r) => setTimeout(r, 2000));
+    // 1. Glitch the acrostic lines in-place: sparse fonts+colors → symbols
+    //    Same 3-phase ramp as Onboarding's triggerComplete
+    await runGlitchPhases([
+      { glitchLevel: 0.06, symbolLevel: 0.0, interval: 250, duration: 800 },
+      { glitchLevel: 0.35, symbolLevel: 0.12, interval: 140, duration: 1000 },
+      { glitchLevel: 0.85, symbolLevel: 0.55, interval: 70, duration: 1200 },
+    ]);
 
-    // 3. Intensify to symbols: all lines become !@#$%^&*()
-    setGlitchOverlay("symbols");
+    // 2. Switch off per-char glitch and flood with !@#$%^&*() overlay
+    setGlitching(false);
+    setGlitchLevel(0);
+    setSymbolLevel(0);
+    setSymbolsOverlay(true);
+    const symInterval = setInterval(() => setSymbolsTick((n) => n + 1), 80);
+    await new Promise((r) => setTimeout(r, 1500));
+    clearInterval(symInterval);
+    setSymbolsOverlay(false);
+
+    // 3. Clear lines and print ERROR messages slowly (onboarding-style timing)
+    setLines([]);
+    for (let i = 0; i < OLIVIA_FINAL_ERRORS.length; i++) {
+      await printLine(OLIVIA_FINAL_ERRORS[i], "error", ERROR_DELAY);
+    }
+
+    // 4. Pause before final glitch
     await new Promise((r) => setTimeout(r, 1500));
 
-    // 4. Hide overlay, clear lines, start printing ERROR sequence slowly (onboarding-style timing)
-    setGlitchOverlay(null);
-    setLines([]);
-
-    // Varied delays like onboarding: 700-1300ms range
-    const delays = [
-      900, 700, 800, 1000, 1100, 850, 950, 1200, 750, 900, 1000, 850, 950, 800,
-      900, 1000, 850, 900, 1100, 800, 1200, 950, 850, 900, 1000, 950, 1100,
-    ];
-    for (let i = 0; i < OLIVIA_FINAL_ERRORS.length; i++) {
-      const delay = delays[i % delays.length];
-      await printLine(OLIVIA_FINAL_ERRORS[i], "error", delay);
-    }
-
-    // 5. Brief pause, then intense final glitch flash
-    await new Promise((r) => setTimeout(r, 1000));
-    setGlitchOverlay("symbols");
-    await new Promise((r) => setTimeout(r, 400));
-    setGlitchOverlay("scatter");
-    await new Promise((r) => setTimeout(r, 300));
-    setGlitchOverlay("symbols");
-    await new Promise((r) => setTimeout(r, 400));
-    setGlitchOverlay(null);
-
-    // 6. Clear localStorage and fully reset the website
-    await new Promise((r) => setTimeout(r, 500));
-    try {
-      localStorage.clear();
-      console.log("[Terminal] localStorage cleared. Reloading...");
-    } catch (e) {
-      console.error("[Terminal] Failed to clear localStorage:", e);
-    }
-
-    // Full page reload to reset everything
-    window.location.reload();
-  }, [stopOliviaLoop, printLine]);
+    // 5. Glitch the error lines with same 3-phase ramp, then stutter-out → reload
+    await runGlitchPhases(
+      [
+        { glitchLevel: 0.06, symbolLevel: 0.0, interval: 250, duration: 800 },
+        { glitchLevel: 0.35, symbolLevel: 0.12, interval: 140, duration: 1000 },
+        { glitchLevel: 0.85, symbolLevel: 0.55, interval: 70, duration: 1200 },
+      ],
+      {
+        doStutter: true,
+        onStutterDone: () => {
+          try {
+            localStorage.clear();
+          } catch {}
+          window.location.reload();
+        },
+      },
+    );
+  }, [stopOliviaLoop, printLine, runGlitchPhases]);
 
   // ── Open / close ──────────────────────────────────────────────────────────
   const handleOpen = useCallback(() => {
@@ -404,7 +546,9 @@ export default function Terminal({ onboardingDone = false }) {
     setIsOpen(false);
     stopOliviaLoop();
     if (phase === "olivia-loop" || phase === "olivia-final") {
-      setGlitchOverlay(null);
+      setGlitching(false);
+      setSymbolsOverlay(false);
+      setOverlayOpacity(1);
       setPhase("open");
     }
   }, [phase, stopOliviaLoop]);
@@ -427,7 +571,6 @@ export default function Terminal({ onboardingDone = false }) {
       if (bootStep === 0) {
         await printLines(step.response, 45);
       } else {
-        // Boot step 1: "help me please" → print formatted help
         await printLine("This is all I can give you.", "output", 45);
         await printLine("", "output", 20);
         for (const raw of HELP_LINES_RAW) {
@@ -440,7 +583,6 @@ export default function Terminal({ onboardingDone = false }) {
         setBootStep((n) => n + 1);
       } else {
         setPhase("open");
-        console.log("[Terminal] Boot complete. Free command mode.");
       }
     },
     [bootStep, printLine, printLines],
@@ -455,58 +597,42 @@ export default function Terminal({ onboardingDone = false }) {
         setPhase("open");
         if (!trimmed) return;
       }
-      if (phase === "olivia-final") return; // can't interrupt final sequence
+      if (phase === "olivia-final") return;
       if (!trimmed) return;
 
-      console.log(`[Terminal] Command: "${trimmed}"`);
       await printLine(`${PROMPT_PREFIX}${trimmed}`, "committed-prompt", 0);
-
       const parts = trimmed.split(/\s+/);
       const cmd = parts[0].toLowerCase();
       const args = parts.slice(1).join(" ");
 
-      // ── help ────────────────────────────────────────────────────────────────
+      // ── help ──────────────────────────────────────────────────────────────
       if (cmd === "help") {
         await printLine("", "output", 20);
-        for (const raw of HELP_LINES_RAW) {
+        for (const raw of HELP_LINES_RAW)
           await printLine("", "help-jsx", 30, raw);
-        }
         await printLine("", "output", 20);
         return;
       }
 
-      // ── ls ──────────────────────────────────────────────────────────────────
+      // ── ls ────────────────────────────────────────────────────────────────
       if (cmd === "ls") {
         await printLine("", "output", 20);
-        const completedMap = Object.fromEntries(
-          PIECE_SLUGS.map((s) => [s, game.isTitleComplete(s)]),
-        );
-        console.log("[Terminal] ls — title completion:", completedMap);
-        console.log(
-          "[Terminal] ls — completedPieces:",
-          game.state.completedPieces,
-        );
-        console.log(
-          "[Terminal] ls — obituariesUnlocked:",
-          game.state.obituariesUnlocked,
-        );
         const titles = PIECE_SLUGS.map((slug) => PIECE_TITLES[slug]);
         const colW = Math.max(...titles.map((t) => t.length)) + 3;
         for (let i = 0; i < PIECE_SLUGS.length; i += COLS) {
           const row = PIECE_SLUGS.slice(i, i + COLS);
-          const rowText = row
-            .map((slug) => PIECE_TITLES[slug].padEnd(colW))
-            .join("");
-          const rowDone = row.every((slug) => game.isTitleComplete(slug));
-          const rowType = row.map((slug) => game.isTitleComplete(slug));
-          // Print as mixed — use jsxContent for per-cell strikethrough
-          await printLine(rowText, "ls-row", 22, { slugs: row, colW });
+          await printLine(
+            row.map((slug) => PIECE_TITLES[slug].padEnd(colW)).join(""),
+            "ls-row",
+            22,
+            { slugs: row, colW },
+          );
         }
         await printLine("", "output", 20);
         return;
       }
 
-      // ── cd ──────────────────────────────────────────────────────────────────
+      // ── cd ────────────────────────────────────────────────────────────────
       if (cmd === "cd") {
         if (!args) {
           await printLine("ERROR: no directory specified", "error");
@@ -526,7 +652,7 @@ export default function Terminal({ onboardingDone = false }) {
         return;
       }
 
-      // ── find ────────────────────────────────────────────────────────────────
+      // ── find ──────────────────────────────────────────────────────────────
       if (cmd === "find") {
         if (!args) {
           await printLine("ERROR: who are you looking for?", "error");
@@ -538,7 +664,6 @@ export default function Terminal({ onboardingDone = false }) {
           return;
         }
         const slugs = PERSON_PIECES[person];
-        console.log(`[Terminal] find ${person}:`, slugs);
         await printLine("", "output", 20);
         const colW = Math.max(...slugs.map((s) => PIECE_TITLES[s].length)) + 3;
         for (let i = 0; i < slugs.length; i += COLS) {
@@ -549,17 +674,16 @@ export default function Terminal({ onboardingDone = false }) {
         return;
       }
 
-      // ── obit ────────────────────────────────────────────────────────────────
+      // ── obit ──────────────────────────────────────────────────────────────
       if (cmd === "obit") {
         if (!args) {
           await printLine("ERROR: specify a name or piece title", "error");
           return;
         }
 
-        const { ready, secondsRemaining } = game.checkTimerReady();
-        if (!ready) {
-          const msg = game.getNextTimerError();
-          await printLine(msg, "error");
+        const { ready } = game.checkTimerReady();
+        if (!ready && !passkeyUsed.current) {
+          await printLine(game.getNextTimerError(), "error");
           return;
         }
 
@@ -570,20 +694,19 @@ export default function Terminal({ onboardingDone = false }) {
             .filter(([, pieces]) => pieces.includes(slugFromArg))
             .map(([name]) => name)
             .filter((name) => name !== "Olivia");
-          console.log(
-            `[Terminal] obit piece "${slugFromArg}" — people:`,
-            people,
-          );
+
+          if (people.length === 0) {
+            await printLine(getNextOliviaOnlyPieceError(), "error");
+            return;
+          }
+
           await printLine("", "output", 20);
           for (const person of people) {
             if (game.isObitUnlocked(person)) {
-              console.log(`[Terminal] Printing obit for ${person}`);
-              for (const l of OBITUARY_TEXT[person]) {
+              for (const l of OBITUARY_TEXT[person])
                 await printLine(l, "obit-text", 70);
-              }
               await printLine("", "output", 30);
             } else {
-              console.log(`[Terminal] ${person} obit locked`);
               await printLine("", "obit-locked", 40, { name: person });
             }
           }
@@ -593,9 +716,7 @@ export default function Terminal({ onboardingDone = false }) {
         // obit Olivia
         if (args.toLowerCase() === "olivia") {
           if (!game.isObitUnlocked("Olivia")) {
-            const msg = game.getNextObitError("Olivia");
-            console.log(`[Terminal] Olivia obit locked: "${msg}"`);
-            await printLine(msg, "error");
+            await printLine(game.getNextObitError("Olivia"), "error");
             return;
           }
           await printLine("", "output", 20);
@@ -639,11 +760,9 @@ export default function Terminal({ onboardingDone = false }) {
           ]);
           setPhase("olivia-loop");
           runOliviaLoop();
-          // After 5 seconds, transition to final sequence automatically
-          const finalTimer = setTimeout(() => {
-            runOliviaFinalSequence();
-          }, 5000);
-          oliviaTimersRef.current.push(finalTimer);
+          // After 5s clean loop, transition to final sequence automatically
+          const t = setTimeout(() => runOliviaFinalSequence(), 5000);
+          oliviaTimersRef.current.push(t);
           return;
         }
 
@@ -651,16 +770,12 @@ export default function Terminal({ onboardingDone = false }) {
         const person = matchPerson(args);
         if (person) {
           if (!game.isObitUnlocked(person)) {
-            const msg = game.getNextObitError(person);
-            console.log(`[Terminal] ${person} obit locked: "${msg}"`);
-            await printLine(msg, "error");
+            await printLine(game.getNextObitError(person), "error");
             return;
           }
-          console.log(`[Terminal] Printing obit for ${person}`);
           await printLine("", "output", 20);
-          for (const l of OBITUARY_TEXT[person]) {
+          for (const l of OBITUARY_TEXT[person])
             await printLine(l, "obit-text", 70);
-          }
           await printLine("", "output", 20);
           return;
         }
@@ -669,10 +784,10 @@ export default function Terminal({ onboardingDone = false }) {
         return;
       }
 
-      // ── debug (dev only) ────────────────────────────────────────────────────
+      // ── debug ─────────────────────────────────────────────────────────────
       if (cmd === "debug") {
         const s = game.state;
-        console.log("[DEBUG] Full game state:", JSON.parse(JSON.stringify(s)));
+        console.log("[DEBUG]", JSON.parse(JSON.stringify(s)));
         await printLine("", "output", 10);
         await printLine(
           `completed: ${Object.keys(s.completedPieces).join(", ") || "none"}`,
@@ -708,6 +823,7 @@ export default function Terminal({ onboardingDone = false }) {
       printLines,
       runOliviaLoop,
       runOliviaFinalSequence,
+      getNextOliviaOnlyPieceError,
       stopOliviaLoop,
     ],
   );
@@ -727,11 +843,9 @@ export default function Terminal({ onboardingDone = false }) {
   );
 
   const handleWheel = (e) => e.stopPropagation();
-
   const currentHint =
     phase === "boot-prompt" ? (BOOT_STEPS[bootStep]?.hint ?? "") : "";
 
-  // Don't render pill at all until onboarding is done
   if (!onboardingDone) return null;
 
   return (
@@ -743,7 +857,7 @@ export default function Terminal({ onboardingDone = false }) {
           style={{
             position: "fixed",
             bottom: 24,
-            right: 24,
+            right: 55,
             zIndex: 9999,
             background: "#000",
             color: "#fff",
@@ -793,6 +907,7 @@ export default function Terminal({ onboardingDone = false }) {
               pointerEvents: "auto",
             }}
           />
+          {/* Terminal window — overlayOpacity controls stutter-out, matching Onboarding */}
           <div
             onClick={() => inputRef.current?.focus()}
             style={{
@@ -807,10 +922,13 @@ export default function Terminal({ onboardingDone = false }) {
               flexDirection: "column",
               boxShadow: "0 12px 48px rgba(0,0,0,0.9)",
               fontFamily: "'Courier New', Courier, monospace",
-              fontSize: "13px",
+              fontSize: "14px",
+              fontWeight: 800,
               lineHeight: "1.65",
               overflow: "hidden",
               cursor: "text",
+              opacity: glitching ? overlayOpacity : 1,
+              transition: "none",
             }}
           >
             {/* Title bar */}
@@ -860,7 +978,7 @@ export default function Terminal({ onboardingDone = false }) {
               </button>
             </div>
 
-            {/* Output */}
+            {/* Output area */}
             <div
               ref={scrollRef}
               style={{
@@ -872,17 +990,24 @@ export default function Terminal({ onboardingDone = false }) {
                 position: "relative",
               }}
             >
-              {/* Glitch overlay for Olivia final sequence */}
-              {glitchOverlay && (
-                <GlitchOverlay mode={glitchOverlay} lines={lines} />
-              )}
+              {/* Full !@#$%^&*() flood overlay */}
+              {symbolsOverlay && <SymbolsOverlay tick={symbolsTick} />}
 
+              {/* Lines — GlitchedText applied per-char when glitching is active */}
               {lines.map((line) => (
-                <LineRow key={line.id} line={line} game={game} />
+                <LineRow
+                  key={line.id}
+                  line={line}
+                  game={game}
+                  glitching={glitching}
+                  glitchLevel={glitchLevel}
+                  symbolLevel={symbolLevel}
+                  glitchTick={glitchTick}
+                />
               ))}
 
-              {/* Inline prompt */}
-              {!isPrinting && (
+              {/* Inline prompt — hidden during symbols overlay */}
+              {!isPrinting && !symbolsOverlay && (
                 <div
                   style={{
                     display: "flex",
@@ -937,7 +1062,7 @@ export default function Terminal({ onboardingDone = false }) {
                   />
                 </div>
               )}
-              {isPrinting && (
+              {isPrinting && !symbolsOverlay && (
                 <span
                   style={{
                     display: "inline-block",
@@ -985,60 +1110,11 @@ export default function Terminal({ onboardingDone = false }) {
   );
 }
 
-// ─── GlitchOverlay ────────────────────────────────────────────────────────────
-// "scatter" mode: existing lines dissolve into random characters
-// "symbols" mode: fills the terminal with !@#$%^&*() characters
-const SYMBOL_CHARS = "!@#$%^&*()";
-function randomSymbol() {
-  return SYMBOL_CHARS[Math.floor(Math.random() * SYMBOL_CHARS.length)];
-}
-function randomGlitch() {
-  const chars =
-    "!@#$%^&*()ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  return chars[Math.floor(Math.random() * chars.length)];
-}
-
-function GlitchOverlay({ mode, lines }) {
-  const [frame, setFrame] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setFrame((f) => f + 1), 80);
-    return () => clearInterval(id);
-  }, []);
-
-  if (mode === "symbols") {
-    // Fill with a block of symbol characters
-    const rows = 18;
-    const cols = 55;
-    return (
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "#000",
-          zIndex: 10,
-          padding: "14px 20px",
-          overflow: "hidden",
-          fontFamily: "'Courier New', Courier, monospace",
-          fontSize: "13px",
-          lineHeight: "1.65",
-          color: "#e05555",
-        }}
-      >
-        {Array.from({ length: rows }, (_, r) => (
-          <div key={r} style={{ whiteSpace: "pre" }}>
-            {Array.from({ length: cols }, () => randomSymbol()).join("")}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // "scatter" mode: show existing text but with random character replacements
-  const textLines =
-    lines.length > 0
-      ? lines.map((l) => l.text || "")
-      : Array.from({ length: 8 }, () => "");
-
+// ─── SymbolsOverlay — flood terminal with !@#$%^&*() ─────────────────────────
+function SymbolsOverlay({ tick }) {
+  const rows = 18;
+  const cols = 55;
+  // tick prop forces re-render so symbols animate
   return (
     <div
       style={{
@@ -1049,19 +1125,16 @@ function GlitchOverlay({ mode, lines }) {
         padding: "14px 20px",
         overflow: "hidden",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "13px",
+        fontSize: "14px",
+        fontWeight: 800,
         lineHeight: "1.65",
-        color: "#c8c8c8",
+        color: "#e05555",
+        pointerEvents: "none",
       }}
     >
-      {textLines.map((text, i) => (
-        <div key={i} style={{ whiteSpace: "pre-wrap", minHeight: "1.65em" }}>
-          {text
-            .split("")
-            .map((ch, j) =>
-              ch !== " " && Math.random() < 0.4 ? randomGlitch() : ch,
-            )
-            .join("")}
+      {Array.from({ length: rows }, (_, r) => (
+        <div key={r} style={{ whiteSpace: "pre" }}>
+          {Array.from({ length: cols }, () => randSymbol()).join("")}
         </div>
       ))}
     </div>
@@ -1069,7 +1142,14 @@ function GlitchOverlay({ mode, lines }) {
 }
 
 // ─── LineRow ──────────────────────────────────────────────────────────────────
-function LineRow({ line, game }) {
+function LineRow({
+  line,
+  game,
+  glitching,
+  glitchLevel,
+  symbolLevel,
+  glitchTick,
+}) {
   const base = {
     minHeight: "1.65em",
     whiteSpace: "pre-wrap",
@@ -1078,7 +1158,6 @@ function LineRow({ line, game }) {
     display: "block",
   };
 
-  // Help line with JSX rendering
   if (line.type === "help-jsx" && line.jsxContent) {
     return (
       <div style={base}>
@@ -1087,7 +1166,6 @@ function LineRow({ line, game }) {
     );
   }
 
-  // ls-row and find-row — identical grid renderer, no wrapping
   if (
     (line.type === "ls-row" || line.type === "find-row") &&
     line.jsxContent?.slugs
@@ -1125,7 +1203,6 @@ function LineRow({ line, game }) {
     );
   }
 
-  // Locked obit name — GlitchText then vanishes
   if (line.type === "obit-locked" && line.jsxContent?.name) {
     return (
       <div style={base}>
@@ -1134,9 +1211,25 @@ function LineRow({ line, game }) {
     );
   }
 
+  // Plain text — apply GlitchedText when glitching (identical to Onboarding's renderLineContent)
+  const styles = lineStyle(line.type);
+  const baseColor = styles.color ?? "#c8c8c8";
+  const text = line.text || "";
+
   return (
-    <div style={{ ...base, ...lineStyle(line.type) }}>
-      {line.text || "\u00A0"}
+    <div style={{ ...base, ...styles }}>
+      {glitching && text.trim() !== "" ? (
+        // key={glitchTick} re-rolls seeds every tick → flicker effect
+        <GlitchedText
+          key={glitchTick}
+          text={text}
+          glitchLevel={glitchLevel}
+          symbolLevel={symbolLevel}
+          baseColor={baseColor}
+        />
+      ) : (
+        text || "\u00A0"
+      )}
     </div>
   );
 }

@@ -34,13 +34,7 @@ export const PIECE_SLUGS = [
 ];
 
 // Pieces where visiting counts as completion (no interaction required)
-export const VISIT_ONLY_PIECES = new Set([
-  "justBones",
-  "cursedVisions",
-  "parasite",
-  "fetish",
-  "parthenogenesis",
-]);
+export const VISIT_ONLY_PIECES = new Set(["justBones", "parasite"]);
 
 // Display titles matching slug order, used by ls command
 export const PIECE_TITLES = {
@@ -211,7 +205,7 @@ export const NAME_ERRORS = [
 
 // ─── Timer config ─────────────────────────────────────────────────────────────
 // DEV: 30 seconds. To restore production: change TIMER_SECONDS to 11 * 60
-const TIMER_SECONDS = 30; // ← swap to `11 * 60` for production
+const TIMER_SECONDS = 11 * 60; // ← swap to `11 * 60` for production [30s for dev]
 
 export function formatRemaining(secondsLeft) {
   const s = Math.max(0, Math.ceil(secondsLeft));
@@ -240,6 +234,9 @@ function defaultState() {
     // justBones pre-completed and visited from the start
     completedPieces: { justBones: true },
     visitedPieces: { justBones: true },
+    // fullyCompletedPieces: written only by markCompleted (not markInteracted).
+    // Olivia's obit requires every piece here; non-Olivia people only need completedPieces.
+    fullyCompletedPieces: { justBones: true },
     piece7ClickCount: 0,
     pagesVisited129: [],
     lofFilesOpened: [],
@@ -268,6 +265,10 @@ function loadState() {
         ...(saved.completedPieces ?? {}),
       },
       visitedPieces: { ...def.visitedPieces, ...(saved.visitedPieces ?? {}) },
+      fullyCompletedPieces: {
+        ...def.fullyCompletedPieces,
+        ...(saved.fullyCompletedPieces ?? {}),
+      },
       obituariesUnlocked: {
         ...def.obituariesUnlocked,
         ...(saved.obituariesUnlocked ?? {}),
@@ -325,18 +326,23 @@ function _checkObituaryUnlocks(changedSlug) {
     const s = getSnapshot();
     if (s.obituariesUnlocked[name]) return;
     const required = PERSON_PIECES[name];
-    const completed = required.filter((slug) => s.completedPieces[slug]);
-    const missing = required.filter((slug) => !s.completedPieces[slug]);
+
+    // Olivia requires every piece fully completed (markCompleted / markVisited on visit-only).
+    // Everyone else unlocks on first meaningful interaction (markInteracted → completedPieces).
+    const checkMap =
+      name === "Olivia" ? s.fullyCompletedPieces : s.completedPieces;
+
+    const done = required.filter((slug) => checkMap[slug]);
+    const missing = required.filter((slug) => !checkMap[slug]);
     const allDone = missing.length === 0;
     console.log(
-      `[Obit] Checking ${name}: ${completed.length}/${required.length} pieces done.`,
+      `[Obit] Checking ${name} (${name === "Olivia" ? "fullyCompleted" : "completed"}): ${done.length}/${required.length}.`,
       allDone ? "→ UNLOCKED" : `Missing: [${missing.join(", ")}]`,
     );
     if (allDone) {
       setState((prev) => ({
         ...prev,
         obituariesUnlocked: { ...prev.obituariesUnlocked, [name]: true },
-        // Reset error count for this person now that their obit is available
         obitErrorCounts: { ...prev.obitErrorCounts, [name]: 0 },
       }));
       console.log(`[Obit] ✓ ${name} obituary unlocked! Error count reset.`);
@@ -386,35 +392,50 @@ export function GameProvider({ children }) {
     setState((s) => {
       if (s.visitedPieces[slug]) return s;
       const visitedPieces = { ...s.visitedPieces, [slug]: true };
+      const isVisitOnly = VISIT_ONLY_PIECES.has(slug);
+      // Visit-only: counts as both interacted AND fully completed
       const completedPieces =
-        VISIT_ONLY_PIECES.has(slug) && !s.completedPieces[slug]
+        isVisitOnly && !s.completedPieces[slug]
           ? { ...s.completedPieces, [slug]: true }
           : s.completedPieces;
+      const fullyCompletedPieces =
+        isVisitOnly && !s.fullyCompletedPieces[slug]
+          ? { ...s.fullyCompletedPieces, [slug]: true }
+          : s.fullyCompletedPieces;
       console.log(
-        `[Game] Visited: ${slug}${VISIT_ONLY_PIECES.has(slug) ? " (visit-only → completed)" : ""}`,
+        `[Game] Visited: ${slug}${isVisitOnly ? " (visit-only → completed+fullyCompleted)" : ""}`,
       );
-      if (VISIT_ONLY_PIECES.has(slug) && !s.completedPieces[slug]) {
+      if (isVisitOnly && !s.completedPieces[slug]) {
         setTimeout(() => _checkObituaryUnlocks(slug), 0);
       }
-      return { ...s, visitedPieces, completedPieces };
+      return { ...s, visitedPieces, completedPieces, fullyCompletedPieces };
     });
   }, []);
 
   const markInteracted = useCallback((slug) => {
+    // Writes completedPieces only — enough to unlock non-Olivia obits.
+    // Does NOT write fullyCompletedPieces, so Olivia still needs markCompleted.
     setState((s) => {
       if (s.completedPieces[slug]) return s;
       console.log(`[Game] Interacted → completed: ${slug}`);
       return { ...s, completedPieces: { ...s.completedPieces, [slug]: true } };
     });
-    // Interacting counts as completion — check obit unlocks
     setTimeout(() => _checkObituaryUnlocks(slug), 0);
   }, []);
 
   const markCompleted = useCallback((slug) => {
+    // Writes both completedPieces and fullyCompletedPieces.
+    // fullyCompletedPieces is what Olivia's obit unlock checks against.
     setState((s) => {
-      if (s.completedPieces[slug]) return s;
+      const completedPieces = s.completedPieces[slug]
+        ? s.completedPieces
+        : { ...s.completedPieces, [slug]: true };
+      const fullyCompletedPieces = s.fullyCompletedPieces[slug]
+        ? s.fullyCompletedPieces
+        : { ...s.fullyCompletedPieces, [slug]: true };
+      if (s.completedPieces[slug] && s.fullyCompletedPieces[slug]) return s;
       console.log(`[Game] Completed: ${slug}`);
-      return { ...s, completedPieces: { ...s.completedPieces, [slug]: true } };
+      return { ...s, completedPieces, fullyCompletedPieces };
     });
     _checkObituaryUnlocks(slug);
   }, []);
@@ -426,12 +447,8 @@ export function GameProvider({ children }) {
       newCount = s.piece7ClickCount + 1;
       return { ...s, piece7ClickCount: newCount };
     });
-    // Complete at 11
-    if (getSnapshot().piece7ClickCount + 1 >= 11) {
-      markCompleted("untitled");
-    }
-    return getSnapshot().piece7ClickCount + 1;
-  }, [markCompleted]);
+    return newCount;
+  }, []);
 
   const trackPage129 = useCallback((pageId) => {
     const ALL_PAGES = ["1920", "2122", "2324", "192123", "202224"];
@@ -442,8 +459,16 @@ export function GameProvider({ children }) {
       const completedPieces = complete
         ? { ...s.completedPieces, 129: true }
         : s.completedPieces;
+      const fullyCompletedPieces = complete
+        ? { ...s.fullyCompletedPieces, 129: true }
+        : s.fullyCompletedPieces;
       if (complete) _checkObituaryUnlocks("129");
-      return { ...s, pagesVisited129: next, completedPieces };
+      return {
+        ...s,
+        pagesVisited129: next,
+        completedPieces,
+        fullyCompletedPieces,
+      };
     });
   }, []);
 
@@ -456,8 +481,16 @@ export function GameProvider({ children }) {
       const completedPieces = complete
         ? { ...s.completedPieces, lack_of_flight: true }
         : s.completedPieces;
+      const fullyCompletedPieces = complete
+        ? { ...s.fullyCompletedPieces, lack_of_flight: true }
+        : s.fullyCompletedPieces;
       if (complete) _checkObituaryUnlocks("lack_of_flight");
-      return { ...s, lofFilesOpened: next, completedPieces };
+      return {
+        ...s,
+        lofFilesOpened: next,
+        completedPieces,
+        fullyCompletedPieces,
+      };
     });
   }, []);
 
@@ -470,8 +503,16 @@ export function GameProvider({ children }) {
       const completedPieces = complete
         ? { ...s.completedPieces, my_familiar: true }
         : s.completedPieces;
+      const fullyCompletedPieces = complete
+        ? { ...s.fullyCompletedPieces, my_familiar: true }
+        : s.fullyCompletedPieces;
       if (complete) _checkObituaryUnlocks("my_familiar");
-      return { ...s, mfFilesOpened: next, completedPieces };
+      return {
+        ...s,
+        mfFilesOpened: next,
+        completedPieces,
+        fullyCompletedPieces,
+      };
     });
   }, []);
 
@@ -483,10 +524,19 @@ export function GameProvider({ children }) {
         complete && !s.completedPieces.shedding_light
           ? { ...s.completedPieces, shedding_light: true }
           : s.completedPieces;
+      const fullyCompletedPieces =
+        complete && !s.fullyCompletedPieces.shedding_light
+          ? { ...s.fullyCompletedPieces, shedding_light: true }
+          : s.fullyCompletedPieces;
       if (complete && !s.completedPieces.shedding_light) {
         _checkObituaryUnlocks("shedding_light");
       }
-      return { ...s, shedLightRotation: next, completedPieces };
+      return {
+        ...s,
+        shedLightRotation: next,
+        completedPieces,
+        fullyCompletedPieces,
+      };
     });
   }, []);
 
@@ -495,16 +545,21 @@ export function GameProvider({ children }) {
   }, []);
 
   const isTitleComplete = useCallback((slug) => {
-    // A title is "crossed out" when all non-Olivia people for that piece have obits unlocked.
-    // Exception: Olivia-only pieces (no other people) cross out when they've been completed.
-    const people = Object.entries(PERSON_PIECES)
-      .filter(([, pieces]) => pieces.includes(slug))
-      .map(([name]) => name)
-      .filter((name) => name !== "Olivia");
     const s = getSnapshot();
-    // Olivia-only pieces: cross out when completed (not waiting for Olivia obit)
-    if (people.length === 0) return !!s.completedPieces[slug];
-    return people.every((name) => s.obituariesUnlocked[name]);
+
+    const nonOliviaPeople = Object.entries(PERSON_PIECES)
+      .filter(([name, pieces]) => name !== "Olivia" && pieces.includes(slug))
+      .map(([name]) => name);
+
+    // 🩸 Olivia-only pieces:
+    // Cross out as soon as the piece itself is completed.
+    if (nonOliviaPeople.length === 0) {
+      return !!s.completedPieces[slug];
+    }
+
+    // 🪦 Shared pieces:
+    // Cross out when all non-Olivia obits are unlocked.
+    return nonOliviaPeople.every((name) => s.obituariesUnlocked[name]);
   }, []);
 
   // ── Obit error tracking ───────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styles from "./Piece12.module.css";
 import { diffLines } from "../Piece8/diffLines.js";
 import AnimatedLine from "../Piece8/AnimatedLine.jsx";
+import { useGame } from "../../../GameContext";
 import useTrackPiece from "../../../useTrackPiece";
 
 const Piece12 = () => {
@@ -10,7 +11,42 @@ const Piece12 = () => {
   const [operations, setOperations] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
-  useTrackPiece("parasite"); // visit-only
+  const { trackParasiteLink } = useGame();
+  const { markInteracted, markCompleted } = useTrackPiece("parasite");
+  const [clickedLinks, setClickedLinks] = useState(new Set());
+
+  const handleParasiteLink = useCallback(
+    (linkId, filename) => {
+      const url = `/assets/piece12/${filename}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+
+      setClickedLinks((prev) => {
+        const next = new Set(prev);
+        const wasEmpty = next.size === 0;
+        next.add(linkId);
+        trackParasiteLink(linkId);
+        if (wasEmpty) {
+          markInteracted();
+        }
+        if (next.has("oneside") && next.has("andtheother")) {
+          markCompleted();
+        }
+        return next;
+      });
+    },
+    [markCompleted, markInteracted, trackParasiteLink],
+  );
+
+  const handleTitleClick = useCallback(() => {
+    if (currentVersion === 0) {
+      handleParasiteLink("andtheother", "andtheother.txt");
+      return;
+    }
+    if (currentVersion === 1) {
+      handleParasiteLink("oneside", "oneside.txt");
+    }
+  }, [currentVersion, handleParasiteLink]);
+
   // Load the two text files on mount
   useEffect(() => {
     const loadFiles = async () => {
@@ -93,7 +129,20 @@ const Piece12 = () => {
             {operations.slice(0, 25).map((op, index) => (
               <div
                 key={`${currentVersion}-${index}`}
-                className={`${styles.line} ${index === 0 ? styles.h2Title : ""}`}
+                className={`${styles.line} ${index === 0 ? `${styles.h2Title} ${styles.linkTitle}` : ""}`}
+                onClick={index === 0 ? handleTitleClick : undefined}
+                style={
+                  index === 0
+                    ? {
+                        cursor: "pointer",
+                        textDecoration:
+                          clickedLinks.has("oneside") ||
+                          clickedLinks.has("andtheother")
+                            ? "underline"
+                            : "none",
+                      }
+                    : undefined
+                }
               >
                 <AnimatedLine
                   operation={op}

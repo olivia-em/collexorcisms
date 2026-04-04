@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "./Piece17.module.css";
 import { useCamera } from "../../../CameraContext";
+import { useGame } from "../../../GameContext";
 import useTrackPiece from "../../../useTrackPiece";
 
 // All link IDs that must be clicked to complete n23
@@ -8,30 +9,28 @@ const REQUIRED_LINKS = ["thirty-one", "my-familiar", "monster", "secret"];
 
 const Piece17 = () => {
   const { goToPiece } = useCamera();
+  const { trackN23Link, state } = useGame();
   const { markCompleted, markInteracted } = useTrackPiece("n23");
 
-  // Track which links have been clicked this session
-  const [clicked, setClicked] = useState(new Set());
-  const [interactedOnce, setInteractedOnce] = useState(false);
+  const interactedOnceRef = React.useRef(!!state.completedPieces?.n23);
+
+  React.useEffect(() => {
+    const clicked = state.n23LinksClicked ?? [];
+    if (REQUIRED_LINKS.every((id) => clicked.includes(id))) {
+      markCompleted();
+    }
+  }, [markCompleted, state.n23LinksClicked]);
 
   const handleLinkClick = (e, pieceNumber, linkId) => {
     e.preventDefault();
 
     // First interaction unlocks Adham's obituary
-    if (!interactedOnce) {
-      setInteractedOnce(true);
+    if (!interactedOnceRef.current) {
+      interactedOnceRef.current = true;
       markInteracted();
     }
 
-    setClicked((prev) => {
-      const next = new Set(prev);
-      next.add(linkId);
-      // All required links clicked → fully complete (for Olivia's obituary)
-      if (REQUIRED_LINKS.every((id) => next.has(id))) {
-        markCompleted();
-      }
-      return next;
-    });
+    trackN23Link(linkId);
 
     if (goToPiece && typeof goToPiece === "function") {
       goToPiece(pieceNumber);

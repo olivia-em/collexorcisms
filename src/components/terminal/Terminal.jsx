@@ -13,30 +13,23 @@ import {
   CD_ALIASES,
   PERSON_PIECES,
   OBITUARY_TEXT,
-  formatRemaining,
+  NAME_TO_NUMBER_WORD,
+  TIP_UNLOCK_COUNT,
 } from "../../GameContext";
 import GlitchText from "../GlitchText";
 
 const PROMPT_PREFIX = "olivialee@10-08-2001 % ";
 const COLS = 4;
 
+const OPEN_HINT_SEQUENCE = [
+  "welcome back",
+  "it's all here, as you left it",
+  "help me",
+];
+
 const BOOT_STEPS = [
   {
-    command: "questions?",
-    hint: "questions?",
-    response: [
-      { text: "answers? no...", type: "output" },
-      { text: "", type: "output" },
-      {
-        text: "you can always change the directory if you feel lost\u2026",
-        type: "output",
-      },
-      { text: "", type: "output" },
-    ],
-  },
-  {
-    command: "help me please",
-    hint: "help me please",
+    command: "help me",
     response: [],
   },
 ];
@@ -141,13 +134,21 @@ function HelpLineContent({ raw }) {
   );
 }
 
-const HELP_LINES_RAW = [
+const BASE_HELP_LINES_RAW = [
   "ls : show directory contents",
   "cd : change directory # ex. cd justBones",
-  "find : who you're looking for\u2026 # ex. find Olivia",
+  "map : where you are",
   "obit : come at the close # ex. obit N23 or obit Olivia",
   "help : show terminal commands",
 ];
+
+function getHelpLinesRaw(completedCount) {
+  const lines = [...BASE_HELP_LINES_RAW];
+  if (completedCount >= TIP_UNLOCK_COUNT) {
+    lines.push("tip : for when you just don't understand");
+  }
+  return lines;
+}
 
 const OLIVIA_FINAL_ERRORS = [
   "ERROR: I told you this wasn\u2019t some game you could win.",
@@ -214,10 +215,90 @@ function LockedObitName({ name }) {
   );
 }
 
+// ─── ASCII Map renderer ───────────────────────────────────────────────────────
+// Renders the map as JSX lines. Each line is a plain string for the map-row type.
+// youLabel: "you" or "Olivia" depending on mapRequestCount.
+// cameraZ: used to compute the user's position dot on the vertical axis.
+// Returns an array of { text, type } objects to feed into printLines.
+function buildMapLines({ slugs, game, youLabel, cameraZ, spacing }) {
+  const BOX_W = 22; // inner width of each box
+  const lines = [];
+
+  // Header
+  lines.push({ text: "", type: "output" });
+
+  // We render each slug as one row: [box][spacer][rail]
+  // The rail has a dot (●) at the position corresponding to the camera.
+  const numPieces = slugs.length;
+
+  // Compute the user's position in the list (0 = top piece, numPieces-1 = last)
+  // cameraZ: piece 1 = -200, piece N = -200 - (N-1)*spacing
+  // So pieceZ_i = -200 - i*spacing, i in 0..numPieces-1
+  // userPos = (cameraZ - (-200)) / -spacing  = (-200 - cameraZ) / spacing
+  const rawPos = (-200 - cameraZ) / spacing;
+  const clampedPos = Math.max(0, Math.min(numPieces - 1, rawPos));
+
+  slugs.forEach((slug, i) => {
+    const visited = game.state.visitedPieces[slug];
+    const pct = game.getPieceProgress(slug);
+    const title = visited ? PIECE_TITLES[slug] : "";
+    const pctStr = `${pct}%`;
+
+    // Build box content: "title          pct%"
+    // Truncate title to fit, right-align pct
+    const innerAvail = BOX_W;
+    const pctField = pctStr.padStart(4);
+    const titleAvail = innerAvail - pctField.length - 1;
+    const titleStr =
+      title.length > titleAvail
+        ? title.slice(0, titleAvail - 1) + "\u2026"
+        : title.padEnd(titleAvail);
+    const inner = titleStr + " " + pctField;
+
+    // Top border for first box
+    if (i === 0) {
+      lines.push({
+        text: `\u250C${"─".repeat(BOX_W + 2)}\u2510  \u2502`,
+        type: "output",
+      });
+    }
+
+    // Box row — determine if the dot goes on this line
+    // dot is placed at the row closest to clampedPos
+    const dotRow = Math.round(clampedPos);
+    const railChar = i === dotRow ? "●" : "\u2502";
+    const labelSuffix = i === dotRow ? ` \u2190 ${youLabel}` : "";
+
+    lines.push({
+      text: `\u2502 ${inner} \u2502  ${railChar}${labelSuffix}`,
+      type: "output",
+    });
+
+    // Separator between boxes, or bottom border
+    if (i < slugs.length - 1) {
+      lines.push({
+        text: `\u251C${"─".repeat(BOX_W + 2)}\u2524  \u2502`,
+        type: "output",
+      });
+    } else {
+      lines.push({
+        text: `\u2514${"─".repeat(BOX_W + 2)}\u2518  \u2502`,
+        type: "output",
+      });
+    }
+  });
+
+  lines.push({ text: "", type: "output" });
+  return lines;
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function Terminal({ onboardingDone = false }) {
+export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   const { goToPiece } = useCamera();
   const game = useGame();
+  const allPiecesAt100 = PIECE_SLUGS.every(
+    (slug) => game.getPieceProgress(slug) >= 100,
+  );
 
   const [isOpen, setIsOpen] = useState(false);
   const [lines, setLines] = useState([]);
@@ -228,19 +309,15 @@ export default function Terminal({ onboardingDone = false }) {
   const [exorcismLines, setExorcismLines] = useState([]);
 
   // ── Glitch state — mirrors Onboarding exactly ──────────────────────────────
-  // glitching: enables per-character GlitchedText on all lines
-  // glitchLevel/symbolLevel: passed to GlitchedText
-  // glitchTick: increments on interval so seeds re-roll → flicker effect
-  // overlayOpacity: controls terminal window opacity during stutter-out
   const [glitching, setGlitching] = useState(false);
   const [glitchLevel, setGlitchLevel] = useState(0);
   const [symbolLevel, setSymbolLevel] = useState(0);
   const [glitchTick, setGlitchTick] = useState(0);
   const [overlayOpacity, setOverlayOpacity] = useState(1);
-
-  // symbolsOverlay: full-screen !@#$%^&*() flood (separate from per-char glitch)
   const [symbolsOverlay, setSymbolsOverlay] = useState(false);
   const [symbolsTick, setSymbolsTick] = useState(0);
+  const [openHintText, setOpenHintText] = useState("");
+  const [openHintIsRed, setOpenHintIsRed] = useState(false);
 
   const idRef = useRef(0);
   const inputRef = useRef(null);
@@ -253,7 +330,13 @@ export default function Terminal({ onboardingDone = false }) {
   const oliviaOnlyPieceErrorIdxRef = useRef(0);
   const passkeyBuffer = useRef("");
   const passkeyUsed = useRef(false);
+  const openHintTimersRef = useRef([]);
+  const openHintPlayedRef = useRef(false);
+  const tipHelpAcknowledgedRef = useRef(false);
   const PASSKEY = "3200";
+
+  // spacing must match CSSScroll
+  const SPACING = 1000;
 
   const getNextOliviaOnlyPieceError = useCallback(() => {
     const msg =
@@ -269,6 +352,43 @@ export default function Terminal({ onboardingDone = false }) {
     return idRef.current;
   };
 
+  const clearOpenHintTimers = useCallback(() => {
+    openHintTimersRef.current.forEach(clearTimeout);
+    openHintTimersRef.current = [];
+  }, []);
+
+  const runOpenHintAnimation = useCallback(() => {
+    clearOpenHintTimers();
+    setOpenHintText("");
+    setOpenHintIsRed(false);
+
+    let elapsed = 0;
+    for (let msgIndex = 0; msgIndex < OPEN_HINT_SEQUENCE.length; msgIndex++) {
+      const msg = OPEN_HINT_SEQUENCE[msgIndex];
+      const isFinal = msgIndex === OPEN_HINT_SEQUENCE.length - 1;
+      for (let i = 1; i <= msg.length; i++) {
+        const timer = setTimeout(
+          () => setOpenHintText(msg.slice(0, i)),
+          elapsed,
+        );
+        openHintTimersRef.current.push(timer);
+        elapsed += 28;
+      }
+      const holdTimer = setTimeout(() => setOpenHintText(msg), elapsed + 420);
+      openHintTimersRef.current.push(holdTimer);
+
+      if (isFinal) {
+        elapsed += 860;
+        break;
+      }
+
+      elapsed += 860;
+      const clearTimer = setTimeout(() => setOpenHintText(""), elapsed);
+      openHintTimersRef.current.push(clearTimer);
+      elapsed += 150;
+    }
+  }, [clearOpenHintTimers]);
+
   useEffect(() => {
     fetch("/assets/exorcisms.txt")
       .then((r) => r.text())
@@ -277,6 +397,12 @@ export default function Terminal({ onboardingDone = false }) {
       )
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      clearOpenHintTimers();
+    };
+  }, [clearOpenHintTimers]);
 
   useLayoutEffect(() => {
     if (scrollRef.current)
@@ -293,44 +419,51 @@ export default function Terminal({ onboardingDone = false }) {
       setTimeout(() => inputRef.current?.focus(), 50);
   }, [isOpen, isPrinting]);
 
+  const runDevUnlock = useCallback(() => {
+    console.log("[Terminal] 🔓 Dev passkey 3200 — forcing win state...");
+    passkeyUsed.current = true;
+
+    PIECE_SLUGS.forEach((slug) => {
+      game.markVisited(slug);
+      game.markCompleted(slug);
+    });
+
+    for (let i = 0; i < 11; i++) game.incrementPiece7();
+    ["1920", "2122", "2324", "192123", "202224"].forEach((p) =>
+      game.trackPage129(p),
+    );
+    game.complete129FromHome?.();
+    ["LOF.JPG", "LOF.txt"].forEach((f) => game.trackLofFile(f));
+    ["MF.txt", "MF1.png", "MF2.png", "MF3.JPG"].forEach((f) =>
+      game.trackMfFile(f),
+    );
+    for (let i = 1; i <= 11; i++) game.trackObjectsInElevenStep(i);
+    game.markCompleted("objects_in_eleven");
+    ["thirty-one", "my-familiar", "monster", "secret"].forEach((id) =>
+      game.trackN23Link(id),
+    );
+    ["oneside", "andtheother"].forEach((id) => game.trackParasiteLink(id));
+    game.trackShedLightRotation(Math.PI * 3);
+    console.log(
+      "[Terminal] ✓ Win state set. Open terminal and type: obit Olivia",
+    );
+  }, [game]);
+
   // ── Dev passkey: type "3200" anywhere → instant win state ────────────────
   useEffect(() => {
     const onKey = (e) => {
+      if (!/^\d$/.test(e.key)) return;
       passkeyBuffer.current = (passkeyBuffer.current + e.key).slice(
         -PASSKEY.length,
       );
       if (passkeyBuffer.current === PASSKEY) {
         passkeyBuffer.current = "";
-        console.log("[Terminal] 🔓 Dev passkey 3200 — forcing win state...");
-
-        // Bypass timer check
-        passkeyUsed.current = true;
-
-        // Mark every piece visited + completed
-        PIECE_SLUGS.forEach((slug) => {
-          game.markVisited(slug);
-          game.markCompleted(slug);
-        });
-
-        // Satisfy all piece-specific counters
-        for (let i = 0; i < 11; i++) game.incrementPiece7();
-        ["1920", "2122", "2324", "192123", "202224"].forEach((p) =>
-          game.trackPage129(p),
-        );
-        ["LOF.JPG", "LOF.txt"].forEach((f) => game.trackLofFile(f));
-        ["MF.txt", "MF1.png", "MF2.png", "MF3.JPG"].forEach((f) =>
-          game.trackMfFile(f),
-        );
-        game.trackShedLightRotation(Math.PI * 3);
-
-        console.log(
-          "[Terminal] ✓ Win state set. Open terminal and type: obit Olivia",
-        );
+        runDevUnlock();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game]);
+  }, [runDevUnlock]);
 
   // ── Queued printer ────────────────────────────────────────────────────────
   const flushQueue = useCallback(() => {
@@ -386,8 +519,6 @@ export default function Terminal({ onboardingDone = false }) {
 
   const runOliviaLoop = useCallback(async () => {
     oliviaActiveRef.current = true;
-
-    // Print initial acrostic, saving line IDs so we can swap them in-place
     const initialAcrostic = buildAcrostic(exorcismLines);
     const lineIds = [];
     for (const l of initialAcrostic) {
@@ -400,7 +531,6 @@ export default function Terminal({ onboardingDone = false }) {
     const blankId = nextId();
     setLines((prev) => [...prev, { id: blankId, text: "", type: "output" }]);
 
-    // Swap acrostic lines in-place every 300ms
     const loopUpdate = () => {
       if (!oliviaActiveRef.current) return;
       const newAcrostic = buildAcrostic(exorcismLines);
@@ -417,10 +547,7 @@ export default function Terminal({ onboardingDone = false }) {
     oliviaTimersRef.current.push(t);
   }, [exorcismLines]);
 
-  // ── Glitch phase runner — mirrors Onboarding's triggerComplete ────────────
-  // phases: [{ glitchLevel, symbolLevel, interval, duration }]
-  // If doStutter=true, runs the Onboarding stutter-out sequence afterward
-  // and calls onStutterDone when the last stutter frame fires.
+  // ── Glitch phase runner ───────────────────────────────────────────────────
   const runGlitchPhases = useCallback(
     (phases, { doStutter = false, onStutterDone = null } = {}) => {
       return new Promise((resolve) => {
@@ -451,7 +578,6 @@ export default function Terminal({ onboardingDone = false }) {
         });
 
         if (doStutter) {
-          // Stutter sequence identical to Onboarding: [1,0,1,0,0.7,0,0.4,0,1,0] at 80ms steps
           const stutterSeq = [1, 0, 1, 0, 0.7, 0, 0.4, 0, 1, 0];
           stutterSeq.forEach((op, i) => {
             timers.push(
@@ -490,15 +616,12 @@ export default function Terminal({ onboardingDone = false }) {
     stopOliviaLoop();
     setPhase("olivia-final");
 
-    // 1. Glitch the acrostic lines in-place: sparse fonts+colors → symbols
-    //    Same 3-phase ramp as Onboarding's triggerComplete
     await runGlitchPhases([
       { glitchLevel: 0.06, symbolLevel: 0.0, interval: 250, duration: 800 },
       { glitchLevel: 0.35, symbolLevel: 0.12, interval: 140, duration: 1000 },
       { glitchLevel: 0.85, symbolLevel: 0.55, interval: 70, duration: 1200 },
     ]);
 
-    // 2. Switch off per-char glitch and flood with !@#$%^&*() overlay
     setGlitching(false);
     setGlitchLevel(0);
     setSymbolLevel(0);
@@ -508,16 +631,13 @@ export default function Terminal({ onboardingDone = false }) {
     clearInterval(symInterval);
     setSymbolsOverlay(false);
 
-    // 3. Clear lines and print ERROR messages slowly (onboarding-style timing)
     setLines([]);
     for (let i = 0; i < OLIVIA_FINAL_ERRORS.length; i++) {
       await printLine(OLIVIA_FINAL_ERRORS[i], "error", ERROR_DELAY);
     }
 
-    // 4. Pause before final glitch
     await new Promise((r) => setTimeout(r, 1500));
 
-    // 5. Glitch the error lines with same 3-phase ramp, then stutter-out → reload
     await runGlitchPhases(
       [
         { glitchLevel: 0.06, symbolLevel: 0.0, interval: 250, duration: 800 },
@@ -540,18 +660,71 @@ export default function Terminal({ onboardingDone = false }) {
   const handleOpen = useCallback(() => {
     setIsOpen(true);
     hasOpenedRef.current = true;
-  }, []);
+    if (phase === "boot-prompt" && openHintPlayedRef.current) {
+      setOpenHintText("help me");
+      setOpenHintIsRed(false);
+    }
+  }, [phase]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
     stopOliviaLoop();
+    clearOpenHintTimers();
+    setOpenHintText("");
+    setOpenHintIsRed(false);
     if (phase === "olivia-loop" || phase === "olivia-final") {
       setGlitching(false);
       setSymbolsOverlay(false);
       setOverlayOpacity(1);
       setPhase("open");
     }
-  }, [phase, stopOliviaLoop]);
+  }, [clearOpenHintTimers, phase, stopOliviaLoop]);
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      phase !== "boot-prompt" ||
+      isPrinting ||
+      openHintPlayedRef.current
+    ) {
+      return;
+    }
+
+    openHintPlayedRef.current = true;
+    runOpenHintAnimation();
+
+    return () => {
+      clearOpenHintTimers();
+    };
+  }, [clearOpenHintTimers, isOpen, isPrinting, phase, runOpenHintAnimation]);
+
+  useEffect(() => {
+    if (allPiecesAt100) {
+      tipHelpAcknowledgedRef.current = true;
+      setOpenHintText("");
+      setOpenHintIsRed(false);
+      return;
+    }
+
+    if (
+      !isOpen ||
+      phase !== "open" ||
+      isPrinting ||
+      tipHelpAcknowledgedRef.current
+    ) {
+      return;
+    }
+
+    const tipUnlocked = game.getCompletedPieceCount() >= TIP_UNLOCK_COUNT;
+    if (!tipUnlocked) {
+      setOpenHintText("");
+      setOpenHintIsRed(false);
+      return;
+    }
+
+    setOpenHintText("help");
+    setOpenHintIsRed(true);
+  }, [allPiecesAt100, game, isOpen, isPrinting, phase]);
 
   // ── Boot submission ───────────────────────────────────────────────────────
   const handleBootSubmit = useCallback(
@@ -568,16 +741,13 @@ export default function Terminal({ onboardingDone = false }) {
         return;
       }
 
-      if (bootStep === 0) {
-        await printLines(step.response, 45);
-      } else {
-        await printLine("This is all I can give you.", "output", 45);
-        await printLine("", "output", 20);
-        for (const raw of HELP_LINES_RAW) {
-          await printLine("", "help-jsx", 30, raw);
-        }
-        await printLine("", "output", 20);
+      await printLine("This is all I can give you.", "output", 45);
+      await printLine("", "output", 20);
+      const helpLines = getHelpLinesRaw(game.getCompletedPieceCount());
+      for (const raw of helpLines) {
+        await printLine("", "help-jsx", 30, raw);
       }
+      await printLine("", "output", 20);
 
       if (bootStep < BOOT_STEPS.length - 1) {
         setBootStep((n) => n + 1);
@@ -585,7 +755,7 @@ export default function Terminal({ onboardingDone = false }) {
         setPhase("open");
       }
     },
-    [bootStep, printLine, printLines],
+    [bootStep, game, printLine, printLines],
   );
 
   // ── Free command ──────────────────────────────────────────────────────────
@@ -600,6 +770,12 @@ export default function Terminal({ onboardingDone = false }) {
       if (phase === "olivia-final") return;
       if (!trimmed) return;
 
+      if (trimmed === PASSKEY) {
+        runDevUnlock();
+        await printLine("[dev] win state forced", "hint", 20);
+        return;
+      }
+
       await printLine(`${PROMPT_PREFIX}${trimmed}`, "committed-prompt", 0);
       const parts = trimmed.split(/\s+/);
       const cmd = parts[0].toLowerCase();
@@ -607,9 +783,13 @@ export default function Terminal({ onboardingDone = false }) {
 
       // ── help ──────────────────────────────────────────────────────────────
       if (cmd === "help") {
+        tipHelpAcknowledgedRef.current = true;
+        setOpenHintText("");
+        setOpenHintIsRed(false);
+        await printLine("This is all I can give you.", "output", 35);
         await printLine("", "output", 20);
-        for (const raw of HELP_LINES_RAW)
-          await printLine("", "help-jsx", 30, raw);
+        const helpLines = getHelpLinesRaw(game.getCompletedPieceCount());
+        for (const raw of helpLines) await printLine("", "help-jsx", 30, raw);
         await printLine("", "output", 20);
         return;
       }
@@ -649,27 +829,47 @@ export default function Terminal({ onboardingDone = false }) {
           "output",
         );
         goToPiece(pieceIdx);
+        // Auto-close terminal after navigating
+        setTimeout(() => {
+          setIsOpen(false);
+          stopOliviaLoop();
+        }, 500);
         return;
       }
 
-      // ── find ──────────────────────────────────────────────────────────────
-      if (cmd === "find") {
-        if (!args) {
-          await printLine("ERROR: who are you looking for?", "error");
+      // ── map ───────────────────────────────────────────────────────────────
+      if (cmd === "map") {
+        const count = game.incrementMapCount();
+        // "you" for first two requests, "Olivia" from third onward
+        const youLabel = count >= 3 ? "Olivia" : "you";
+
+        const mapLines = buildMapLines({
+          slugs: PIECE_SLUGS,
+          game,
+          youLabel,
+          cameraZ,
+          spacing: SPACING,
+        });
+
+        for (const { text, type } of mapLines) {
+          await printLine(text, type, 18);
+        }
+        return;
+      }
+
+      // ── tip ───────────────────────────────────────────────────────────────
+      if (cmd === "tip") {
+        const completedCount = game.getCompletedPieceCount();
+        if (completedCount < TIP_UNLOCK_COUNT) {
+          await printLine(
+            `ERROR: keep going (${completedCount}/${TIP_UNLOCK_COUNT} pieces)`,
+            "error",
+          );
           return;
         }
-        const person = matchPerson(args);
-        if (!person) {
-          await printLine("ERROR: answer not found", "error");
-          return;
-        }
-        const slugs = PERSON_PIECES[person];
+        const msg = game.getNextTip();
         await printLine("", "output", 20);
-        const colW = Math.max(...slugs.map((s) => PIECE_TITLES[s].length)) + 3;
-        for (let i = 0; i < slugs.length; i += COLS) {
-          const row = slugs.slice(i, i + COLS);
-          await printLine("", "find-row", 22, { slugs: row, colW });
-        }
+        await printLine(msg, "output", 40);
         await printLine("", "output", 20);
         return;
       }
@@ -682,7 +882,7 @@ export default function Terminal({ onboardingDone = false }) {
         }
 
         const { ready } = game.checkTimerReady();
-        if (!ready && !passkeyUsed.current) {
+        if (!ready && !passkeyUsed.current && !allPiecesAt100) {
           await printLine(game.getNextTimerError(), "error");
           return;
         }
@@ -707,13 +907,15 @@ export default function Terminal({ onboardingDone = false }) {
                 await printLine(l, "obit-text", 70);
               await printLine("", "output", 30);
             } else {
-              await printLine("", "obit-locked", 40, { name: person });
+              // Display number word instead of real name
+              const numWord = NAME_TO_NUMBER_WORD[person] ?? person;
+              await printLine("", "obit-locked", 40, { name: numWord });
             }
           }
           return;
         }
 
-        // obit Olivia
+        // obit Olivia (must be checked before generic person path)
         if (args.toLowerCase() === "olivia") {
           if (!game.isObitUnlocked("Olivia")) {
             await printLine(game.getNextObitError("Olivia"), "error");
@@ -760,20 +962,52 @@ export default function Terminal({ onboardingDone = false }) {
           ]);
           setPhase("olivia-loop");
           runOliviaLoop();
-          // After 5s clean loop, transition to final sequence automatically
           const t = setTimeout(() => runOliviaFinalSequence(), 5000);
           oliviaTimersRef.current.push(t);
           return;
         }
 
-        // obit [person name]
-        const person = matchPerson(args);
+        // obit [person name] — also accept number words
+        let person = matchPerson(args);
+        // If they typed a number word, resolve to real name for lookup
+        if (!person) {
+          // Check if it's a number word
+          const NUMBER_WORD_NAMES_LOCAL = {
+            one: "Derek",
+            two: "Jake",
+            three: "Nick",
+            four: "Ari",
+            five: "Michael",
+            six: "AJ",
+            seven: "Mark",
+            eight: "Adham",
+            nine: "Lee",
+            ten: "Scott",
+            eleven: "Saf",
+          };
+          const resolved = NUMBER_WORD_NAMES_LOCAL[args.toLowerCase()];
+          if (resolved) person = resolved;
+        }
+
         if (person) {
           if (!game.isObitUnlocked(person)) {
             await printLine(game.getNextObitError(person), "error");
             return;
           }
-          await printLine("", "output", 20);
+
+          // Display number word instead of real name for non-Olivia
+          if (person !== "Olivia") {
+            const numWord = NAME_TO_NUMBER_WORD[person];
+            if (numWord) {
+              await printLine("", "output", 20);
+              await printLine(`\u2014 ${numWord}`, "obit-name", 40);
+            } else {
+              await printLine("", "output", 20);
+            }
+          } else {
+            await printLine("", "output", 20);
+          }
+
           for (const l of OBITUARY_TEXT[person])
             await printLine(l, "obit-text", 70);
           await printLine("", "output", 20);
@@ -809,16 +1043,29 @@ export default function Terminal({ onboardingDone = false }) {
           "code",
           10,
         );
+        await printLine(`mapCount:  ${s.mapRequestCount}`, "code", 10);
+        await printLine(`jbClosed:  ${s.justBonesClosedAfterOpen}`, "code", 10);
         await printLine("", "output", 10);
+        return;
+      }
+
+      // ── find (legacy redirect) ────────────────────────────────────────────
+      if (cmd === "find") {
+        await printLine(
+          "ERROR: command not found: find \u2014 try: map",
+          "error",
+        );
         return;
       }
 
       await printLine(`ERROR: command not found: ${cmd}`, "error");
     },
     [
+      allPiecesAt100,
       game,
       goToPiece,
       phase,
+      cameraZ,
       printLine,
       printLines,
       runOliviaLoop,
@@ -844,7 +1091,7 @@ export default function Terminal({ onboardingDone = false }) {
 
   const handleWheel = (e) => e.stopPropagation();
   const currentHint =
-    phase === "boot-prompt" ? (BOOT_STEPS[bootStep]?.hint ?? "") : "";
+    phase === "boot-prompt" ? (openHintText ?? "") : (openHintText ?? "");
 
   if (!onboardingDone) return null;
 
@@ -907,7 +1154,6 @@ export default function Terminal({ onboardingDone = false }) {
               pointerEvents: "auto",
             }}
           />
-          {/* Terminal window — overlayOpacity controls stutter-out, matching Onboarding */}
           <div
             onClick={() => inputRef.current?.focus()}
             style={{
@@ -990,10 +1236,8 @@ export default function Terminal({ onboardingDone = false }) {
                 position: "relative",
               }}
             >
-              {/* Full !@#$%^&*() flood overlay */}
               {symbolsOverlay && <SymbolsOverlay tick={symbolsTick} />}
 
-              {/* Lines — GlitchedText applied per-char when glitching is active */}
               {lines.map((line) => (
                 <LineRow
                   key={line.id}
@@ -1006,7 +1250,7 @@ export default function Terminal({ onboardingDone = false }) {
                 />
               ))}
 
-              {/* Inline prompt — hidden during symbols overlay */}
+              {/* Inline prompt */}
               {!isPrinting && !symbolsOverlay && (
                 <div
                   style={{
@@ -1030,7 +1274,7 @@ export default function Terminal({ onboardingDone = false }) {
                       style={{
                         position: "absolute",
                         left: `${PROMPT_PREFIX.length}ch`,
-                        color: "#444",
+                        color: openHintIsRed ? "#e05555" : "#444",
                         fontStyle: "italic",
                         pointerEvents: "none",
                         whiteSpace: "pre",
@@ -1110,11 +1354,10 @@ export default function Terminal({ onboardingDone = false }) {
   );
 }
 
-// ─── SymbolsOverlay — flood terminal with !@#$%^&*() ─────────────────────────
+// ─── SymbolsOverlay ───────────────────────────────────────────────────────────
 function SymbolsOverlay({ tick }) {
   const rows = 18;
   const cols = 55;
-  // tick prop forces re-render so symbols animate
   return (
     <div
       style={{
@@ -1211,7 +1454,6 @@ function LineRow({
     );
   }
 
-  // Plain text — apply GlitchedText when glitching (identical to Onboarding's renderLineContent)
   const styles = lineStyle(line.type);
   const baseColor = styles.color ?? "#c8c8c8";
   const text = line.text || "";
@@ -1219,7 +1461,6 @@ function LineRow({
   return (
     <div style={{ ...base, ...styles }}>
       {glitching && text.trim() !== "" ? (
-        // key={glitchTick} re-rolls seeds every tick → flicker effect
         <GlitchedText
           key={glitchTick}
           text={text}

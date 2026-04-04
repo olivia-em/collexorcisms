@@ -20,6 +20,19 @@ const DEFAULT_AUDIO_LEVELS = {
   piece22: 0.9,
 };
 
+const DISTANCE_FULL_AT = 350;
+const DISTANCE_SILENT_AT = 2500;
+const AMBIENT_DUCK_FLOOR = 0.18;
+
+function distanceToGain(distance) {
+  if (!Number.isFinite(distance)) return 1;
+  if (distance <= DISTANCE_FULL_AT) return 1;
+  if (distance >= DISTANCE_SILENT_AT) return 0;
+  const t =
+    (distance - DISTANCE_FULL_AT) / (DISTANCE_SILENT_AT - DISTANCE_FULL_AT);
+  return 1 - t;
+}
+
 function clampVolume(value) {
   if (!Number.isFinite(value)) return 1;
   return Math.max(0, Math.min(1, value));
@@ -33,8 +46,12 @@ export function AmbientAudioProvider({ children }) {
   const masterGainRef = useRef(null);
   const entriesByKeyRef = useRef(new Map());
   const nodesByElementRef = useRef(new WeakMap());
+  const pieceDistanceByAudioKeyRef = useRef(new Map());
+  const ambientDuckFactorRef = useRef(1);
+  const ambientBaseLevelRef = useRef(DEFAULT_AUDIO_LEVELS.ambient);
   const [audioLevels, setAudioLevels] = useState(DEFAULT_AUDIO_LEVELS);
   const [isMuted, setIsMuted] = useState(false);
+  const [activePieceAudioLevel, setActivePieceAudioLevel] = useState(0);
 
   const ensureAudioContext = useCallback(() => {
     if (typeof window === "undefined") return null;
@@ -83,19 +100,27 @@ export function AmbientAudioProvider({ children }) {
       let node = nodesByElementRef.current.get(element);
       if (!node) {
         const source = ctx.createMediaElementSource(element);
+        const gainNode = ctx.createGain();
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.82;
-        source.connect(analyser);
+        source.connect(gainNode);
+        gainNode.connect(analyser);
         analyser.connect(masterGain);
         node = {
           element,
           source,
+          gainNode,
           analyser,
           data: new Uint8Array(analyser.frequencyBinCount),
         };
         nodesByElementRef.current.set(element, node);
       }
+
+      const distanceMultiplier = distanceToGain(
+        pieceDistanceByAudioKeyRef.current.get(audioKey),
+      );
+      node.gainNode.gain.value = clampVolume(distanceMultiplier);
 
       let keySet = entriesByKeyRef.current.get(audioKey);
       if (!keySet) {
@@ -150,6 +175,11 @@ export function AmbientAudioProvider({ children }) {
     }));
   }, []);
 
+  const setPieceDistance = useCallback((audioKey, distance) => {
+    if (!audioKey) return;
+    pieceDistanceByAudioKeyRef.current.set(audioKey, distance);
+  }, []);
+
   const startAmbient = useCallback(() => {
     if (startedRef.current) return;
 
@@ -157,7 +187,10 @@ export function AmbientAudioProvider({ children }) {
     const audio = new Audio(src);
     audio.loop = true;
     audio.preload = "auto";
-    audio.volume = clampVolume(audioLevels.ambient);
+    ambientBaseLevelRef.current = clampVolume(audioLevels.ambient);
+    audio.volume = clampVolume(
+      ambientBaseLevelRef.current * ambientDuckFactorRef.current,
+    );
 
     ambientRef.current = audio;
     startedRef.current = true;
@@ -182,9 +215,74 @@ export function AmbientAudioProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const audio = ambientRef.current;
-    if (!audio) return;
-    audio.volume = clampVolume(audioLevels.ambient);
+    const timer = window.setInterval(() => {
+      const ctx = audioContextRef.current;
+      const now = ctx?.currentTime ?? 0;
+      const ambientAudio = ambientRef.current;
+      let anyPiecePlaying = false;
+      let confessionsPlaying = false;
+      let peakPieceLevel = 0;
+
+      entriesByKeyRef.current.forEach((entries, audioKey) => {
+        const distanceMultiplier =
+          audioKey === "ambient"
+            ? 1
+            : distanceToGain(pieceDistanceByAudioKeyRef.current.get(audioKey));
+
+        entries.forEach((entry) => {
+          if (!entry?.gainNode) return;
+
+          const targetGain = clampVolume(distanceMultiplier);
+          if (ctx) {
+            entry.gainNode.gain.setTargetAtTime(targetGain, now, 0.08);
+          } else {
+            entry.gainNode.gain.value = targetGain;
+          }
+
+          if (
+            audioKey !== "ambient" &&
+            entry.element &&
+            !entry.element.paused &&
+            !entry.element.ended
+          ) {
+            anyPiecePlaying = true;
+            if (audioKey === "piece10") confessionsPlaying = true;
+            entry.analyser.getByteFrequencyData(entry.data);
+            let sum = 0;
+            for (let i = 0; i < entry.data.length; i++) {
+              sum += entry.data[i];
+            }
+            const avg = sum / entry.data.length / 255;
+            const weighted = avg * targetGain;
+            if (weighted > peakPieceLevel) peakPieceLevel = weighted;
+          }
+        });
+      });
+
+      const targetDuck = confessionsPlaying
+        ? 0
+        : anyPiecePlaying
+          ? AMBIENT_DUCK_FLOOR
+          : 1;
+      ambientDuckFactorRef.current +=
+        (targetDuck - ambientDuckFactorRef.current) * 0.14;
+
+      const targetAmbientBase = clampVolume(audioLevels.ambient);
+      ambientBaseLevelRef.current +=
+        (targetAmbientBase - ambientBaseLevelRef.current) * 0.12;
+
+      if (ambientAudio) {
+        ambientAudio.volume = clampVolume(
+          ambientBaseLevelRef.current * ambientDuckFactorRef.current,
+        );
+      }
+
+      setActivePieceAudioLevel((prev) => prev + (peakPieceLevel - prev) * 0.25);
+    }, 80);
+
+    return () => {
+      window.clearInterval(timer);
+    };
   }, [audioLevels.ambient]);
 
   useEffect(() => {
@@ -199,6 +297,7 @@ export function AmbientAudioProvider({ children }) {
         entries.forEach((entry) => {
           try {
             entry.source.disconnect();
+            entry.gainNode.disconnect();
             entry.analyser.disconnect();
           } catch {
             // noop
@@ -227,6 +326,9 @@ export function AmbientAudioProvider({ children }) {
       setAudioLevel,
       registerAudioElement,
       getAudioReactiveLevel,
+      setPieceDistance,
+      activePieceAudioLevel,
+      isPieceAudioActive: activePieceAudioLevel > 0.02,
       isMuted,
       toggleMute,
       entriesByKey: entriesByKeyRef, // ← in the value object
@@ -237,10 +339,12 @@ export function AmbientAudioProvider({ children }) {
       getPieceVolume,
       isMuted,
       registerAudioElement,
+      setPieceDistance,
       setAudioLevel,
       startAmbient,
       stopAmbient,
       toggleMute,
+      activePieceAudioLevel,
       // no dep needed — entriesByKeyRef is a stable ref, never changes identity
     ],
   );

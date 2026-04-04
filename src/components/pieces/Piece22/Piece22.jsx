@@ -1,21 +1,18 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./Piece22.module.css";
 import useTrackPiece from "../../../useTrackPiece";
-import { ScrollAtEndContext } from "../../../CSSScroll";
 import { useAmbientAudio } from "../../../AmbientAudioContext";
+import { createManagedAudio } from "../../../managedAudio";
 
 // parthenogenesis — audio plays on hover, completes on audio end
-const CITE_LINK_URL = "https://example.com";
-
 const Piece22 = () => {
   const { getPieceVolume, registerAudioElement } = useAmbientAudio();
   const { markCompleted } = useTrackPiece("parthenogenesis");
-  const isAtFurthestScrollPoint = useContext(ScrollAtEndContext);
   const markCompletedRef = useRef(markCompleted);
   const mountRef = useRef(null);
   const [lines, setLines] = useState([]);
   const audioRef = useRef(null);
-  const unregisterAudioRef = useRef(null);
+  const cleanupAudioRef = useRef(null);
   const audioStartedRef = useRef(false);
   const audioInitializedRef = useRef(false);
 
@@ -44,14 +41,8 @@ const Piece22 = () => {
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.onended = null;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.src = "";
-      unregisterAudioRef.current?.();
-      unregisterAudioRef.current = null;
+      cleanupAudioRef.current?.();
+      cleanupAudioRef.current = null;
       audioRef.current = null;
       audioInitializedRef.current = false;
       audioStartedRef.current = false;
@@ -66,14 +57,17 @@ const Piece22 = () => {
     // );
     if (!audioInitializedRef.current) {
       const audioUrl = `${import.meta.env.BASE_URL}assets/piece22/parthenogenesis.mp3`;
-      const audio = new Audio(audioUrl);
-      audio.preload = "auto";
-      audio.volume = getPieceVolume("piece22");
-      unregisterAudioRef.current = registerAudioElement("piece22", audio);
-      audio.onended = () => {
-        markCompletedRef.current?.();
-      };
-      audioRef.current = audio;
+      const managedAudio = createManagedAudio({
+        src: audioUrl,
+        volume: getPieceVolume("piece22"),
+        registerAudioElement: (element) =>
+          registerAudioElement("piece22", element),
+        onEnded: () => {
+          markCompletedRef.current?.();
+        },
+      });
+      cleanupAudioRef.current = managedAudio.cleanup;
+      audioRef.current = managedAudio.audio;
       audioInitializedRef.current = true;
     }
 
@@ -285,17 +279,6 @@ const Piece22 = () => {
 
   return (
     <div className={styles.piece22Container}>
-      {isAtFurthestScrollPoint && (
-        <a
-          href={"https://forms.gle/Uu7xPm1TriJKTcVUA"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.citeLink}
-          aria-label="Open citation"
-        >
-          ^C
-        </a>
-      )}
       <div ref={mountRef} className={styles.sketchMount} />
       {lines.length === 0 && <p className={styles.loadingText}>loading...</p>}
     </div>

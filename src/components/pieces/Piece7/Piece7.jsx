@@ -156,33 +156,71 @@ const Piece7 = () => {
   const audioStartedRef = useRef(false);
   const completionEmittedRef = useRef(false);
   const [audioFinished, setAudioFinished] = useState(false);
+  const fadeOutTimerRef = useRef(null);
+  const fadeOutStartVolumeRef = useRef(0);
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
   };
 
+  const clearFadeOut = useCallback(() => {
+    if (fadeOutTimerRef.current) {
+      clearInterval(fadeOutTimerRef.current);
+      fadeOutTimerRef.current = null;
+    }
+  }, []);
+
+  const fadeOutAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    clearFadeOut();
+    fadeOutStartVolumeRef.current = audio.volume || getPieceVolume("piece7");
+    const duration = 900;
+    const start = performance.now();
+
+    fadeOutTimerRef.current = window.setInterval(() => {
+      const currentAudio = audioRef.current;
+      if (!currentAudio) {
+        clearFadeOut();
+        return;
+      }
+
+      const elapsed = performance.now() - start;
+      const progress = Math.min(1, elapsed / duration);
+      const nextVolume = fadeOutStartVolumeRef.current * (1 - progress);
+      currentAudio.volume = nextVolume;
+
+      if (progress >= 1) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.src = "";
+        unregisterAudioRef.current?.();
+        unregisterAudioRef.current = null;
+        audioRef.current = null;
+        audioStartedRef.current = false;
+        clearFadeOut();
+      }
+    }, 40);
+  }, [clearFadeOut, getPieceVolume]);
+
   useEffect(() => {
     return () => {
+      clearFadeOut();
       const audio = audioRef.current;
       if (!audio) return;
       audio.onended = null;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.src = "";
-      unregisterAudioRef.current?.();
-      unregisterAudioRef.current = null;
-      audioRef.current = null;
-      audioStartedRef.current = false;
+      fadeOutAudio();
     };
-  }, []);
+  }, [clearFadeOut, fadeOutAudio]);
 
   useEffect(() => {
     if (completionEmittedRef.current || isCompleted) return;
-    if (state.piece7ClickCount >= 11 && audioFinished) {
+    if (state.piece7ClickCount >= 11) {
       completionEmittedRef.current = true;
       markCompleted();
     }
-  }, [audioFinished, isCompleted, markCompleted, state.piece7ClickCount]);
+  }, [isCompleted, markCompleted, state.piece7ClickCount]);
 
   const generateWordMeta = (newLines) => {
     wordMetaRef.current = buildWordList(newLines).map(() => ({
@@ -287,6 +325,7 @@ const Piece7 = () => {
       audio.volume = getPieceVolume("piece7");
       unregisterAudioRef.current = registerAudioElement("piece7", audio);
       audio.onended = () => {
+        clearFadeOut();
         setAudioFinished(true);
       };
       audioRef.current = audio;
@@ -310,6 +349,7 @@ const Piece7 = () => {
     runScatterIn,
     runGlitch,
     incrementPiece7,
+    clearFadeOut,
   ]);
 
   void glitchTick;

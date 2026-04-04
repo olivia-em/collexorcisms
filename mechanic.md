@@ -2,7 +2,7 @@
 
 ## The Timer Gate
 
-Before any obit command works, the timer must have elapsed. It starts automatically when onboarding completes. Currently set to 30 seconds in dev (TIMER_SECONDS = 30), swap to 11 \* 60 for production.
+Before any obit command works, the timer must have elapsed. It starts automatically when onboarding completes. Currently set to 11 \* 60 (production timing).
 
 Error behavior: First obit attempt while timer is running shows time remaining without resetting. Second attempt resets the timer to full duration.
 
@@ -30,7 +30,7 @@ A title crosses out in ls when:
 
 **Piece 2 — 129**
 
-- Visit all 5 pages: 1920, 2122, 2324, 192123, 202224. Each call to trackPage129(pageId) accumulates. When all 5 are present, writes both completedPieces and fullyCompletedPieces simultaneously. No markInteracted step — the custom tracker handles everything.
+- Visit all 5 pages: 1920, 2122, 2324, 192123, 202224. Each call to trackPage129(pageId) accumulates page IDs. When all 5 are present, the piece sits at 99% until you click the `129` home link, which calls complete129FromHome and writes both completedPieces and fullyCompletedPieces. No markInteracted step — the custom tracker handles page accumulation and the title/home click finalizes completion.
 
 **Piece 3 — lack_of_flight**
 
@@ -46,15 +46,15 @@ A title crosses out in ls when:
 
 **Piece 6 — cursedVisions**
 
-- **Audio-based completion.** Click the "cursedVisions" title button to play audio (olivia.love.mp3). The audio plays until completion, then calls markCompleted, which writes both maps immediately. Olivia-only, crosses out when audio finishes.
+- **Audio-based completion.** Click the "cursedVisions" title button to play audio (`piece6/love_audio_collage.mp3`). The audio plays until completion, then calls markCompleted, which writes both maps immediately. Olivia-only, crosses out when audio finishes.
 
 **Piece 7 — untitled**
 
-- **Dual-condition completion.** On first click, audio starts (`piece7/olivia.love.mp3`). Piece7 click count is tracked globally via `incrementPiece7`. Piece completes only when both are true: (1) 11 clicks reached and (2) audio finished (`onended`), then `markCompleted("untitled")` writes both maps. Olivia-only, crosses out after both conditions are met.
+- **Dual-condition completion.** On first click, audio starts (`piece7/untitled.mp3`). Piece7 click count is tracked globally via `incrementPiece7`. Piece completes only when both are true: (1) 11 clicks reached and (2) audio finished (`onended`), then `markCompleted("untitled")` writes both maps. Olivia-only, crosses out after both conditions are met.
 
 **Piece 8 — objects_in_eleven**
 
-- **Dual-condition completion.** First button click calls `markInteracted` (for Nick/AJ/Michael obituary progression) and starts audio (`piece8/olivia.love.mp3`). Reaching version 11 (index 10) alone is not enough; Piece 8 completes only when both are true: (1) final version reached and (2) audio finished, then `markCompleted("objects_in_eleven")` writes both maps.
+- **Progressive completion with audio side-effect.** First button click calls `markInteracted` (for Nick/AJ/Michael obituary progression) and starts audio (`piece8/objects.mp3`). Each press advances the diffed version. Reaching version 11 (index 10) now marks the piece complete immediately; the audio still plays on the first and last clicks, but it no longer gates completion.
 
 **Piece 9 — silhouettes**
 
@@ -62,15 +62,16 @@ A title crosses out in ls when:
 
 **Piece 10 — confessions**
 
-- Single interaction (markInteracted). Required by Mark, AJ, Nick, and Michael. One of the last pieces to cross out because it has the most people attached to it.
+- **Playback-end completion.** Clicking the Confessions play button starts the paired videos; completion is granted when the spoken-word video ends (`onEnded` → `markCompleted`). Required by Mark, AJ, Nick, and Michael, so it is often one of the later shared-title cross-outs.
 
 **Piece 11 — secrets**
 
-- Completion is tied to the secret unlock. Press all 3 unique "shh..." submit buttons; on the third unique submit, Piece 11 calls markCompleted and opens /assets/piece11/secrets.txt in a new tab. Required by Mark only.
+- Row submissions are tracked with `trackSecretSubmit(rowIndex)`. Pressing all 3 unique "shh..." submits opens `/assets/piece11/secrets.txt` on the third successful submit milestone.
+- Full piece completion requires both conditions: all 3 rows submitted **and** the `secret` link clicked in Piece 17 (`n23`). Once both are true, Piece 11 calls `markCompleted`.
 
 **Piece 12 — parasite**
 
-- Visit-only. Arriving writes both maps immediately. Required by Jake only, so it crosses out as soon as Jake's obit unlocks (which happens the moment you arrive).
+- Two-link completion. Opening either `oneside.txt` or `andtheother.txt` counts as the first meaningful interaction and unlocks Jake's obit; opening the second distinct link completes the piece and writes both maps. The title line auto-cycles the two versions and can trigger the link opens in sequence.
 
 **Piece 13 — the_empathy_machine**
 
@@ -110,26 +111,26 @@ A title crosses out in ls when:
 
 **Piece 22 — parthenogenesis**
 
-- **Audio-based completion.** Hover over the p5 canvas to trigger audio (confessionsINSTRUMENTAL.mp3). Characters explode/return on hover. Audio plays until completion, then calls markCompleted, which writes both maps. Olivia-only, crosses out when audio finishes.
+- **Audio-based completion.** Hover over the p5 canvas to trigger audio (`piece22/parthenogenesis.mp3`). Characters explode/return on hover. Audio plays until completion, then calls markCompleted, which writes both maps. Olivia-only, crosses out when audio finishes.
 
 ## Person Obituary Requirements
 
 Each person's obit unlocks the moment all their pieces are in completedPieces (one touch each):
 
-| Person  | Pieces required                                                              | Unlocks on                                                                                                                                                                                      |
-| ------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Jake    | parasite                                                                     | Visiting Piece 12                                                                                                                                                                               |
-| Saf     | teethmarks                                                                   | One interaction with Piece 20                                                                                                                                                                   |
-| Scott   | first_on_first                                                               | One interaction with Piece 19                                                                                                                                                                   |
-| Adham   | n23                                                                          | First link click in Piece 17                                                                                                                                                                    |
-| Mark    | secrets + confessions                                                        | Completing Piece 11 (all 3 secret submits) and interacting with Piece 10                                                                                                                        |
-| Lee     | s_curves + shedding_light                                                    | Interacting with Piece 14, and rotating Piece 16 a full 360°                                                                                                                                    |
-| Ari     | the_empathy_machine + silhouettes                                            | Clicking the Piece 13 ♱ link and interacting with Piece 9                                                                                                                                       |
-| Derek   | silhouettes + lack_of_flight                                                 | Interacting with Piece 9, and opening both files in Piece 3                                                                                                                                     |
-| Nick    | 31 + confessions + objects_in_eleven                                         | Interacting with Pieces 15, 10, and first click of Piece 8                                                                                                                                      |
-| AJ      | my_familiar + first_on_first + confessions + silhouettes + objects_in_eleven | All 4 files in Piece 4, plus interacting with Pieces 19, 10, 9, and first click of Piece 8                                                                                                      |
-| Michael | cass_ra + i_am_malicious + confessions + objects_in_eleven                   | Interacting with Pieces 5, 18, 10, and first click of Piece 8                                                                                                                                   |
-| Olivia  | All 22 pieces in fullyCompletedPieces                                        | Everything above fully completed, plus: 129 all 5 pages, untitled (11 clicks + completed audio), fetish animation completion, n23 all 4 links, objects_in_eleven (version 11 + completed audio) |
+| Person  | Pieces required                                                              | Unlocks on                                                                                                                                                                                            |
+| ------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jake    | parasite                                                                     | Clicking both links in Piece 12                                                                                                                                                                       |
+| Saf     | teethmarks                                                                   | One interaction with Piece 20                                                                                                                                                                         |
+| Scott   | first_on_first                                                               | One interaction with Piece 19                                                                                                                                                                         |
+| Adham   | n23                                                                          | First link click in Piece 17                                                                                                                                                                          |
+| Mark    | secrets + confessions                                                        | Completing Piece 11 (all 3 secret submits + `secret` clicked in Piece 17) and finishing Piece 10 video playback                                                                                       |
+| Lee     | s_curves + shedding_light                                                    | Interacting with Piece 14, and rotating Piece 16 a full 360°                                                                                                                                          |
+| Ari     | the_empathy_machine + silhouettes                                            | Clicking the Piece 13 ♱ link and interacting with Piece 9                                                                                                                                             |
+| Derek   | silhouettes + lack_of_flight                                                 | Interacting with Piece 9, and opening both files in Piece 3                                                                                                                                           |
+| Nick    | 31 + confessions + objects_in_eleven                                         | Interacting with Piece 15, finishing Piece 10 video playback, and first click of Piece 8                                                                                                              |
+| AJ      | my_familiar + first_on_first + confessions + silhouettes + objects_in_eleven | All 4 files in Piece 4, plus interacting with Pieces 19 and 9, finishing Piece 10 video playback, and first click of Piece 8                                                                          |
+| Michael | cass_ra + i_am_malicious + confessions + objects_in_eleven                   | Interacting with Pieces 5 and 18, finishing Piece 10 video playback, and first click of Piece 8                                                                                                       |
+| Olivia  | All 22 pieces in fullyCompletedPieces                                        | Everything above fully completed, plus: 129 all 5 pages and the home-link click, untitled (11 clicks + completed audio), fetish animation completion, n23 all 4 links, objects_in_eleven (version 11) |
 
 ## The Olivia Obituary Sequence
 
@@ -149,9 +150,8 @@ Once the timer has elapsed and all 22 pieces are in fullyCompletedPieces, obit O
 ## Dev Passkeys
 
 - **0114** — Skip the Onboarding Terminal
-- **3200** — Anywhere on page. Backdates timerStartedAt by 99,999 seconds in localStorage so the timer gate passes immediately, marks all 22 pieces visited and completed in both maps, satisfies all counters (11 clicks, all 5 pages, both LOF files, all 4 MF files, 3π radians of rotation). Then open the terminal and type `obit Olivia`.
+- **3200** — Anywhere on page. Sets terminal passkey bypass mode for the timer gate and forces the win-state trackers (all pieces visited/completed, required counters and links) so `obit Olivia` is available immediately.
 
 ## Current Visit-Only Pieces (in GameContext)
 
 - justBones
-- parasite

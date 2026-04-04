@@ -2,37 +2,17 @@ import React, { useState } from "react";
 import styles from "./Piece1.module.css";
 import img1Small from "/assets/piece1/IMG_1836_small.JPG";
 import useTrackPiece from "../../../useTrackPiece";
-import { useGame } from "../../../GameContext";
 
 function Piece1() {
   const [expanded, setExpanded] = useState(false);
   const { markInteracted } = useTrackPiece("justBones");
-  const { markJustBonesClosed } = useGame();
-
-  const handleClose = () => {
-    setExpanded(false);
-    markJustBonesClosed();
-  };
 
   return (
     <div className={styles.piece1Container}>
       {expanded ? (
-        <div className={styles.imageView}>
-          <div className={styles.imageFrame}>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={handleClose}
-              aria-label="Close image"
-            >
-              ×
-            </button>
-            <img
-              src={img1Small}
-              alt="justBones"
-              className={styles.expandedImg}
-            />
-          </div>
+        <div className={styles.imageView} onClick={() => setExpanded(false)}>
+          <img src={img1Small} alt="justBones" className={styles.expandedImg} />
+          <span className={styles.closeHint}>click to close</span>
         </div>
       ) : (
         <button

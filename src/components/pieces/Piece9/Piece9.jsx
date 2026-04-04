@@ -35,26 +35,18 @@ const Piece9 = () => {
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     const width = rect.width;
-    const height = rect.height;
     const normalizedX = x / width; // 0 to 1
-    const normalizedY = y / height; // 0 to 1
 
     setSpokenWordOpacity(normalizedX);
     setMontageOpacity(1 - normalizedX);
-
-    if (spokenWordRef.current) {
-      const muteThreshold = 0.1; // 10% from top
-      spokenWordRef.current.volume =
-        normalizedY < muteThreshold
-          ? 0
-          : ((normalizedY - muteThreshold) / (1 - muteThreshold)) *
-            spokenWordVolumeCap;
-    }
   };
 
   useEffect(() => {
+    if (spokenWordRef.current) {
+      spokenWordRef.current.volume = spokenWordVolumeCap;
+    }
+
     const unregisterSpoken = spokenWordRef.current
       ? registerAudioElement("piece9", spokenWordRef.current)
       : null;
@@ -74,7 +66,7 @@ const Piece9 = () => {
         montageRef.current.currentTime = 0;
       }
     };
-  }, [registerAudioElement]);
+  }, [registerAudioElement, spokenWordVolumeCap]);
 
   return (
     <div className={styles.piece9Container} onMouseMove={handleMouseMove}>

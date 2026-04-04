@@ -4,7 +4,15 @@ import useTrackPiece from "../../../useTrackPiece";
 
 const Piece13 = () => {
   const [showSkull, setShowSkull] = useState(false);
-  const { markCompleted } = useTrackPiece("the_empathy_machine");
+  const { markInteracted, markCompleted } = useTrackPiece(
+    "the_empathy_machine",
+  );
+
+  const handleMachineOpen = () => {
+    markInteracted();
+    markCompleted();
+  };
+
   return (
     <div className={styles.piece13Container}>
       <p className={styles.symbolText}>
@@ -14,7 +22,7 @@ const Piece13 = () => {
           target="_blank"
           rel="noopener noreferrer"
           className={styles.symbolLink}
-          onClick={markCompleted}
+          onClick={handleMachineOpen}
           aria-label="Open machine text"
         >
           ♱

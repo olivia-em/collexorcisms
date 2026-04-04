@@ -9,7 +9,10 @@ const Piece18 = () => {
   const [activeTooltip, setActiveTooltip] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const quotesRef = useRef(null);
-  const { markInteracted } = useTrackPiece("i_am_malicious");
+  const hoveredSectionsRef = useRef(new Set());
+  const completionEmittedRef = useRef(false);
+  const { markInteracted, markCompleted, isCompleted } =
+    useTrackPiece("i_am_malicious");
   const tooltips = {
     section1: (
       <>
@@ -48,6 +51,13 @@ const Piece18 = () => {
 
   const handleMouseEnter = (e, section) => {
     markInteracted();
+    hoveredSectionsRef.current.add(section);
+    if (!completionEmittedRef.current && !isCompleted) {
+      if (hoveredSectionsRef.current.size >= 3) {
+        completionEmittedRef.current = true;
+        markCompleted();
+      }
+    }
     setTooltipPosition({
       x: e.clientX,
       y: e.clientY,

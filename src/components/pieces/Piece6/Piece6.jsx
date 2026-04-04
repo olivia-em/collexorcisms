@@ -4,6 +4,7 @@ import styles from "./Piece6.module.css";
 import useTrackPiece from "../../../useTrackPiece";
 import GlitchText from "../../GlitchText";
 import { useAmbientAudio } from "../../../AmbientAudioContext";
+import { createManagedAudio } from "../../../managedAudio";
 
 const GROUPS = [
   { min: 10, max: 99 },
@@ -48,7 +49,7 @@ const Piece6 = () => {
   const [audioStarted, setAudioStarted] = useState(false);
   const canvasRef = useRef();
   const audioRef = useRef(null);
-  const unregisterAudioRef = useRef(null);
+  const cleanupAudioRef = useRef(null);
   const glitchRef = useRef(null);
   const audioStartedRef = useRef(false);
   const audioInitializedRef = useRef(false);
@@ -72,14 +73,8 @@ const Piece6 = () => {
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.onended = null;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.src = "";
-      unregisterAudioRef.current?.();
-      unregisterAudioRef.current = null;
+      cleanupAudioRef.current?.();
+      cleanupAudioRef.current = null;
       audioRef.current = null;
       audioInitializedRef.current = false;
       audioStartedRef.current = false;
@@ -94,14 +89,17 @@ const Piece6 = () => {
     // );
     if (!audioInitializedRef.current) {
       const audioUrl = `${import.meta.env.BASE_URL}assets/piece6/love_audio_collage.mp3`;
-      const audio = new Audio(audioUrl);
-      audio.preload = "auto";
-      audio.volume = getPieceVolume("piece6");
-      unregisterAudioRef.current = registerAudioElement("piece6", audio);
-      audio.onended = () => {
-        markCompletedRef.current?.();
-      };
-      audioRef.current = audio;
+      const managedAudio = createManagedAudio({
+        src: audioUrl,
+        volume: getPieceVolume("piece6"),
+        registerAudioElement: (element) =>
+          registerAudioElement("piece6", element),
+        onEnded: () => {
+          markCompletedRef.current?.();
+        },
+      });
+      cleanupAudioRef.current = managedAudio.cleanup;
+      audioRef.current = managedAudio.audio;
       audioInitializedRef.current = true;
     }
 

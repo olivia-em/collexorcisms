@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import BacksideSphere from "./Spheres/BacksideSphere";
@@ -47,13 +47,9 @@ function RotationTracker({ onDelta }) {
 
 export default function Piece16({ ...canvasProps }) {
   const [showCanvas, setShowCanvas] = useState(false);
-  const { markCompleted } = useTrackPiece("shedding_light");
+  useTrackPiece("shedding_light");
   const { trackShedLightRotation, state } = useGame();
   const completedRef = useRef(state.completedPieces?.shedding_light ?? false);
-
-  useEffect(() => {
-    return () => setShowCanvas(false);
-  }, []);
 
   const handleRotationDelta = (delta) => {
     if (completedRef.current) return; // already done, stop tracking

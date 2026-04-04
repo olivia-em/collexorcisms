@@ -39,8 +39,7 @@
 .folderIcon {
   display: block;
   line-height: 0;
-  /* default: cyan, no glow */
-  filter: drop-shadow(0 0 0px #00ffff);
+  filter: drop-shadow(0 0 0px #6daeff);
   transition: filter 0.25s ease;
 }
 
@@ -52,18 +51,18 @@
 
 /* folder body fill + stroke */
 .folderBody {
-  fill: #00ffff;
-  stroke: #00cccc;
+  fill: #6daeff;
+  stroke: #3f83e6;
   stroke-width: 1.5;
   transition:
     fill 0.25s ease,
     stroke 0.25s ease;
 }
 
-/* hover: body turns red, icon glows cyan */
+/* hover: blue highlight */
 .folderBtn:hover .folderBody {
-  fill: #e05555;
-  stroke: #ff3333;
+  fill: #87bdff;
+  stroke: #5c9cf0;
 }
 
 /* .folderBtn:hover .folderIcon {
@@ -75,12 +74,9 @@
 .folderLabel {
   font-family: "Jacquard12", serif;
   font-size: 1.1rem;
-  color: #00ffff;
+  color: #87bdff;
   letter-spacing: 1px;
-  /* strikethrough */
-  text-decoration: line-through;
-  text-decoration-color: #00ffff99;
-  text-decoration-thickness: 1px;
+  text-decoration: none;
   transition:
     color 0.25s ease,
     text-shadow 0.25s ease;
@@ -88,9 +84,8 @@
 }
 
 .folderBtn:hover .folderLabel {
-  color: #e05555;
-  text-shadow: 0 0 8px #00ffff;
-  text-decoration-color: #e0555599;
+  color: #b9d8ff;
+  text-shadow: 0 0 8px #6daeff;
 }
 
 /* ── Expanded image view ─────────────────────────────────────────────────── */
@@ -105,21 +100,52 @@
   animation: openFolder 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+.imageFrame {
+  position: relative;
+  border: 1px solid rgba(0, 255, 255, 0.55);
+  border-radius: 0;
+  box-shadow:
+    0 0 22px rgba(0, 255, 255, 0.5),
+    0 0 46px rgba(0, 255, 255, 0.28),
+    inset 0 0 16px rgba(0, 255, 255, 0.18);
+  background: #000;
+  padding-top: 0;
+  overflow: hidden;
+}
+
 .expandedImg {
   max-width: min(90vw, 520px);
   max-height: min(80vh, 520px);
   object-fit: contain;
-  border: 1px solid #00ffff44;
-  box-shadow: 0 0 24px #00ffff33;
+  border: 0;
+  box-shadow: none;
   display: block;
 }
 
-.closeHint {
+.closeButton {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  color: #00ffff;
   font-family: "Courier New", Courier, monospace;
-  font-size: 0.7rem;
-  color: #444;
-  letter-spacing: 1px;
-  user-select: none;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
+  text-shadow:
+    0 0 8px rgba(0, 255, 255, 0.9),
+    0 0 14px rgba(255, 36, 36, 0.9),
+    0 0 22px rgba(255, 36, 36, 0.45);
+}
+
+.closeButton:hover {
+  color: #9efcff;
 }
 
 @keyframes openFolder {

@@ -55,3 +55,29 @@
 .rightColumn {
   margin-top: 2.1rem;
 }
+
+.linkTitle:hover {
+  animation: p12TitleGlitch 240ms steps(2, end) infinite;
+  text-shadow:
+    -1px 0 #e05555,
+    1px 0 #00ffff;
+}
+
+@keyframes p12TitleGlitch {
+  0% {
+    transform: translate(0, 0);
+    filter: none;
+  }
+  33% {
+    transform: translate(-1px, 0);
+    filter: hue-rotate(8deg);
+  }
+  66% {
+    transform: translate(1px, 0);
+    filter: hue-rotate(-8deg);
+  }
+  100% {
+    transform: translate(0, 0);
+    filter: none;
+  }
+}

@@ -101,7 +101,7 @@ const poetryPages = {
 function Piece2() {
   const [page, setPage] = useState("index");
   useTrackPiece("129"); // marks visited on mount
-  const { trackPage129 } = useGame();
+  const { trackPage129, complete129FromHome } = useGame();
 
   const handleStarClick = (pageId) => {
     setPage(pageId);
@@ -184,6 +184,7 @@ function Piece2() {
         className={styles.poetryBack}
         onClick={(e) => {
           e.preventDefault();
+          complete129FromHome();
           setPage("index");
         }}
       >

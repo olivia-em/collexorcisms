@@ -5,17 +5,14 @@ import React, {
   Suspense,
   lazy,
   createContext,
-  useContext,
 } from "react";
 import styles from "./CSSScroll.module.css";
+import { PIECE_TITLES, useGame } from "./GameContext";
+import { useAmbientAudio } from "./AmbientAudioContext";
 
 // ─── Visibility context ───────────────────────────────────────────────────────
-// Pieces consume this to know whether they are currently "at the camera"
-// (opacity === 1). useTrackPiece gates markVisited on this.
 export const PieceVisibilityContext = createContext(false);
-// Pieces can also consume this wider range to show UI while still interactable.
 export const PieceInteractionContext = createContext(false);
-// True only when camera is clamped at the furthest scroll position.
 export const ScrollAtEndContext = createContext(false);
 
 const Piece1 = lazy(() => import("./components/pieces/Piece1/Piece1"));
@@ -42,20 +39,92 @@ const Piece21 = lazy(() => import("./components/pieces/Piece21/Piece21"));
 const Piece22 = lazy(() => import("./components/pieces/Piece22/Piece22"));
 
 // ─── Mount distance tuning ────────────────────────────────────────────────────
-const MOUNT_LOOKAHEAD = 3000; // load this many px ahead of camera
-const UNMOUNT_DISTANCE = 2500; // unmount this many px behind camera
-const PIECE7_MOUNT_LOOKAHEAD = 1300; // tighter mount window for Piece7
-const PIECE7_UNMOUNT_DISTANCE = 1100; // unmount closer to off-screen
-const CAMERA_VISIT_THRESHOLD = 500; // used by PieceVisibilityContext / markVisited
-const INTERACTION_THRESHOLD = 900; // used for pointer-events gating
-// Piece index (0-based) of pieces that must never be unmounted once loaded.
-// WebGL pieces stay mounted to avoid context loss.
+const MOUNT_LOOKAHEAD = 3000;
+const UNMOUNT_DISTANCE = 2500;
+const PIECE7_MOUNT_LOOKAHEAD = 1300;
+const PIECE7_UNMOUNT_DISTANCE = 1100;
+const CAMERA_VISIT_THRESHOLD = 500;
+const INTERACTION_THRESHOLD = 900;
 const STICKY_MOUNT_PIECES = new Set([4]); // Piece5
 
+// ─── Flicker hook ─────────────────────────────────────────────────────────────
+// When `shouldDisappear` becomes true, runs a flicker sequence then sets
+// `hidden` to true (display: none equivalent via opacity 0 + pointerEvents none).
+// Returns { flickering, hidden }.
+function useFlickerDisappear(shouldDisappear) {
+  const [flickering, setFlickering] = useState(false);
+  const [replaced, setReplaced] = useState(false);
+
+  useEffect(() => {
+    if (!shouldDisappear || replaced) return;
+    setFlickering(true);
+
+    // Finite timer keeps behavior deterministic in React StrictMode.
+    const hideTimer = setTimeout(() => {
+      setFlickering(false);
+      setReplaced(true);
+    }, 1150);
+
+    return () => clearTimeout(hideTimer);
+  }, [shouldDisappear, replaced]);
+
+  return { flickering, replaced };
+}
+
+function FolderPlaceholder({ title }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "8px",
+        pointerEvents: "none",
+        userSelect: "none",
+      }}
+      aria-hidden="true"
+    >
+      <svg
+        viewBox="0 0 40 32"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ width: "72px", height: "58px", display: "block" }}
+      >
+        <path
+          d="M2 8 C2 8 6 4 10 4 L16 4 C18 4 19 5.5 20 7 L38 7 C39.1 7 40 7.9 40 9 L40 28 C40 29.1 39.1 30 38 30 L2 30 C0.9 30 0 29.1 0 28 L0 10 C0 8.9 0.9 8 2 8Z"
+          fill="#b52c2c"
+          stroke="#ff4b4b"
+          strokeWidth="1.5"
+        />
+      </svg>
+      <span
+        style={{
+          fontFamily: "'Jacquard12', serif",
+          fontSize: "1.1rem",
+          color: "#e05555",
+          letterSpacing: "1px",
+          textDecoration: "line-through",
+          textDecorationColor: "#e0555599",
+          textDecorationThickness: "1px",
+        }}
+      >
+        {title}
+      </span>
+    </div>
+  );
+}
+
 // ─── Piece wrapper ────────────────────────────────────────────────────────────
-// everMountedRef: a plain Set ref shared from the parent — tracks which piece
-// indices have ever been mounted so WebGL pieces stay alive once loaded.
-function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
+function Piece({
+  z,
+  cameraZ,
+  pieceIndex,
+  everMountedRef,
+  children,
+  slug,
+  isCompleted,
+  justBonesReadyToDisappear,
+}) {
   const distance = z - cameraZ;
   const isPiece7 = pieceIndex === 6;
 
@@ -78,28 +147,29 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
   const inRange =
     distance > -effectiveUnmountDistance && distance < effectiveMountLookahead;
 
-  // A piece is "at camera" when it's close enough to be fully opaque
-  // This is what gates useTrackPiece markVisited
   const isAtCamera =
     distance > -CAMERA_VISIT_THRESHOLD && distance < CAMERA_VISIT_THRESHOLD;
-
-  // Interaction can remain active a bit longer than visit tracking
-  // so hover/click doesn't drop the moment a piece is slightly past center.
   const isInteractive =
     distance > -INTERACTION_THRESHOLD && distance < INTERACTION_THRESHOLD;
 
-  // Sticky-mounted pieces: once mounted, never unmounted.
-  // All other pieces: normal mount/unmount based on distance.
   const isStickyMounted = STICKY_MOUNT_PIECES.has(pieceIndex);
   if (inRange) everMountedRef.current.add(pieceIndex);
   const shouldMount = isStickyMounted
     ? everMountedRef.current.has(pieceIndex)
     : inRange;
 
-  // Sticky-mounted pieces that are far away: keep in DOM but hide with
-  // visibility so they don't consume paint/fill unnecessarily.
   const isHidden =
     isStickyMounted && !inRange && everMountedRef.current.has(pieceIndex);
+
+  // ── Disappear logic ───────────────────────────────────────────────────────
+  // justBones (pieceIndex 0): disappears only after justBonesReadyToDisappear.
+  // All other completed pieces: disappear when isCompleted is true.
+  const isJustBones = pieceIndex === 0;
+  const shouldDisappear = isJustBones ? justBonesReadyToDisappear : isCompleted;
+
+  const { flickering, replaced } = useFlickerDisappear(shouldDisappear);
+
+  const finalOpacity = opacity;
 
   return (
     <PieceVisibilityContext.Provider value={isAtCamera}>
@@ -119,14 +189,23 @@ function Piece({ z, cameraZ, pieceIndex, everMountedRef, children }) {
             color: "rgba(255, 255, 255, 0.95)",
             borderRadius: "0px",
             boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-            opacity,
-            transition: "opacity 0.1s",
-            pointerEvents: isInteractive ? "auto" : "none",
-            // visibility:hidden removes from paint but keeps GL context alive
+            opacity: finalOpacity,
+            transition: flickering ? "none" : "opacity 0.1s",
+            pointerEvents:
+              replaced || isHidden ? "none" : isInteractive ? "auto" : "none",
             visibility: isHidden ? "hidden" : "visible",
+            animation: flickering
+              ? "pieceFlicker 1.15s steps(1, end) 1"
+              : "none",
           }}
         >
-          {shouldMount ? children : null}
+          {shouldMount ? (
+            replaced ? (
+              <FolderPlaceholder title={PIECE_TITLES[slug] ?? slug} />
+            ) : (
+              children
+            )
+          ) : null}
         </div>
       </PieceInteractionContext.Provider>
     </PieceVisibilityContext.Provider>
@@ -138,7 +217,9 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
   const [cameraZ, setCameraZ] = useState(-200);
   const scrollRef = useRef(-200);
   const rafRef = useRef(null);
-  const everMountedRef = useRef(new Set()); // plain ref — never triggers renders
+  const everMountedRef = useRef(new Set());
+  const game = useGame();
+  const { setPieceDistance } = useAmbientAudio();
 
   const spacing = 1000;
   const numPieces = 22;
@@ -147,7 +228,11 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
   const piece22Z = -200 - (numPieces - 1) * spacing;
   const isAtFurthestScrollPoint = cameraZ <= minZ + 0.5;
 
-  // Expose goToPiece — identical to original
+  // Read completion state from game
+  const { state } = game;
+  const justBonesReadyToDisappear = state.justBonesClosedAfterOpen;
+
+  // Expose goToPiece
   useEffect(() => {
     if (!setGoToPiece) return;
     setGoToPiece((pieceIdx) => {
@@ -163,9 +248,7 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setGoToPiece, piece22Z, spacing]);
 
-  // rAF-batched scroll — only change from original.
-  // Raw delta accumulates in scrollRef; setCameraZ fires at most once per frame.
-  // This prevents 10-20 queued React re-renders per fast scroll tick.
+  // rAF-batched scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
 
@@ -208,6 +291,53 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
     onCameraZChange?.(cameraZ);
   }, [cameraZ, onCameraZChange]);
 
+  // Helper: piece is complete for disappearance only when title-complete
+  // (includes shared-obit requirements + piece-specific full completion).
+  const isCompleted = (slug) => game.isTitleComplete(slug);
+
+  // Build piece entries: [slug, z, pieceIndex, Component]
+  const PIECES = [
+    { slug: "justBones", z: -200, Component: Piece1 },
+    { slug: "129", z: -200 - 1 * spacing, Component: Piece2 },
+    { slug: "lack_of_flight", z: -200 - 2 * spacing, Component: Piece3 },
+    { slug: "my_familiar", z: -200 - 3 * spacing, Component: Piece4 },
+    { slug: "cass_ra", z: -200 - 4 * spacing, Component: Piece5 },
+    { slug: "cursedVisions", z: -200 - 5 * spacing, Component: Piece6 },
+    { slug: "untitled", z: -200 - 6 * spacing, Component: Piece7 },
+    { slug: "objects_in_eleven", z: -200 - 7 * spacing, Component: Piece8 },
+    { slug: "silhouettes", z: -200 - 8 * spacing, Component: Piece9 },
+    { slug: "confessions", z: -200 - 9 * spacing, Component: Piece10 },
+    { slug: "secrets", z: -200 - 10 * spacing, Component: Piece11 },
+    { slug: "parasite", z: -200 - 11 * spacing, Component: Piece12 },
+    { slug: "the_empathy_machine", z: -200 - 12 * spacing, Component: Piece13 },
+    { slug: "s_curves", z: -200 - 13 * spacing, Component: Piece14 },
+    { slug: "31", z: -200 - 14 * spacing, Component: Piece15 },
+    { slug: "shedding_light", z: -200 - 15 * spacing, Component: Piece16 },
+    { slug: "n23", z: -200 - 16 * spacing, Component: Piece17 },
+    { slug: "i_am_malicious", z: -200 - 17 * spacing, Component: Piece18 },
+    { slug: "first_on_first", z: -200 - 18 * spacing, Component: Piece19 },
+    { slug: "teethmarks", z: -200 - 19 * spacing, Component: Piece20 },
+    { slug: "fetish", z: -200 - 20 * spacing, Component: Piece21 },
+    { slug: "parthenogenesis", z: piece22Z, Component: Piece22 },
+  ];
+
+  useEffect(() => {
+    const audioKeyBySlug = {
+      cursedVisions: "piece6",
+      untitled: "piece7",
+      objects_in_eleven: "piece8",
+      silhouettes: "piece9",
+      confessions: "piece10",
+      parthenogenesis: "piece22",
+    };
+
+    for (const piece of PIECES) {
+      const audioKey = audioKeyBySlug[piece.slug];
+      if (!audioKey) continue;
+      setPieceDistance(audioKey, Math.abs(piece.z - cameraZ));
+    }
+  }, [PIECES, cameraZ, setPieceDistance]);
+
   return (
     <ScrollAtEndContext.Provider value={isAtFurthestScrollPoint}>
       <div className={styles.container}>
@@ -216,229 +346,35 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
             className={styles.preserve3dWrap}
             style={{ transform: `translateZ(${-cameraZ}px)` }}
           >
-            <Piece
-              z={-200}
-              pieceIndex={0}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece1 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 1 * spacing}
-              pieceIndex={1}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece2 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 2 * spacing}
-              pieceIndex={2}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece3 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 3 * spacing}
-              pieceIndex={3}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece4 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 4 * spacing}
-              pieceIndex={4}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece5 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 5 * spacing}
-              pieceIndex={5}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece6 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 6 * spacing}
-              pieceIndex={6}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece7 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 7 * spacing}
-              pieceIndex={7}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece8 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 8 * spacing}
-              pieceIndex={8}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece9 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 9 * spacing}
-              pieceIndex={9}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece10 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 10 * spacing}
-              pieceIndex={10}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece11 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 11 * spacing}
-              pieceIndex={11}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece12 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 12 * spacing}
-              pieceIndex={12}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece13 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 13 * spacing}
-              pieceIndex={13}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece14 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 14 * spacing}
-              pieceIndex={14}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece15 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 15 * spacing}
-              pieceIndex={15}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece16 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 16 * spacing}
-              pieceIndex={16}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece17 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 17 * spacing}
-              pieceIndex={17}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece18 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 18 * spacing}
-              pieceIndex={18}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece19 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 19 * spacing}
-              pieceIndex={19}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece20 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={-200 - 20 * spacing}
-              pieceIndex={20}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece21 />
-              </Suspense>
-            </Piece>
-            <Piece
-              z={piece22Z}
-              pieceIndex={21}
-              everMountedRef={everMountedRef}
-              cameraZ={cameraZ}
-            >
-              <Suspense fallback={<div />}>
-                <Piece22 />
-              </Suspense>
-            </Piece>
+            {PIECES.map(({ slug, z, Component }, pieceIndex) => (
+              <Piece
+                key={slug}
+                z={z}
+                pieceIndex={pieceIndex}
+                everMountedRef={everMountedRef}
+                cameraZ={cameraZ}
+                slug={slug}
+                isCompleted={isCompleted(slug)}
+                justBonesReadyToDisappear={justBonesReadyToDisappear}
+              >
+                <Suspense fallback={<div />}>
+                  <Component />
+                </Suspense>
+              </Piece>
+            ))}
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes pieceFlicker {
+          0%   { opacity: 1; }
+          25%  { opacity: 0; }
+          50%  { opacity: 0.8; }
+          75%  { opacity: 0; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </ScrollAtEndContext.Provider>
   );
 }

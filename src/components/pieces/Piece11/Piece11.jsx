@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import styles from "./Piece11.module.css";
+import { useGame } from "../../../GameContext";
 import useTrackPiece from "../../../useTrackPiece";
 
 function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
@@ -66,31 +67,47 @@ function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
 }
 
 const Piece11 = () => {
-  const { markCompleted } = useTrackPiece("secrets");
-  const [submittedRows, setSubmittedRows] = useState([false, false, false]);
-  const hasOpenedSecretsRef = useRef(false);
+  const { state, trackSecretSubmit } = useGame();
+  const { markInteracted, markCompleted } = useTrackPiece("secrets");
+  const interactedOnceRef = useRef(false);
+  const submittedSet = new Set(state.secretRowsSubmitted ?? []);
+  const submittedRows = [
+    submittedSet.has(0),
+    submittedSet.has(1),
+    submittedSet.has(2),
+  ];
 
-  const handleSecretSubmit = useCallback((rowIndex) => {
-    setSubmittedRows((prev) => {
-      if (prev[rowIndex]) return prev;
+  const handleSecretSubmit = useCallback(
+    (rowIndex) => {
+      if (!interactedOnceRef.current) {
+        interactedOnceRef.current = true;
+        markInteracted();
+      }
 
-      const next = [...prev];
-      next[rowIndex] = true;
+      if (submittedSet.has(rowIndex)) return;
 
-      // Open the text file once all three unique submit buttons have been pressed.
-      if (!hasOpenedSecretsRef.current && next.every(Boolean)) {
-        hasOpenedSecretsRef.current = true;
-        markCompleted();
+      const nextCount = submittedRows.filter(Boolean).length + 1;
+      trackSecretSubmit(rowIndex);
+
+      // Open file on every third successful submission milestone.
+      if (nextCount > 0 && nextCount % 3 === 0) {
         window.open(
           "/assets/piece11/secrets.txt",
           "_blank",
           "noopener,noreferrer",
         );
       }
+    },
+    [markInteracted, submittedRows, submittedSet, trackSecretSubmit],
+  );
 
-      return next;
-    });
-  }, []);
+  React.useEffect(() => {
+    const hasN23Secret = (state.n23LinksClicked ?? []).includes("secret");
+    const hasAllRows = (state.secretRowsSubmitted ?? []).length >= 3;
+    if (hasN23Secret && hasAllRows) {
+      markCompleted();
+    }
+  }, [markCompleted, state.n23LinksClicked, state.secretRowsSubmitted]);
 
   return (
     <div className={styles.piece11Container}>
