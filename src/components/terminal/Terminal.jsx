@@ -20,6 +20,8 @@ import GlitchText from "../GlitchText";
 
 const PROMPT_PREFIX = "olivialee@10-08-2001 % ";
 const COLS = 4;
+const RED_HELP_SEEN_SESSION_KEY = "terminal.redHelpSeen";
+const TIMER_GATE_SEEN_SESSION_KEY = "terminal.timerGateSeen";
 
 const OPEN_HINT_SEQUENCE = [
   "welcome back",
@@ -327,6 +329,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   const oliviaActiveRef = useRef(false);
   const oliviaTimersRef = useRef([]);
   const hasOpenedRef = useRef(false);
+  const bootCompletedRef = useRef(false);
   const oliviaOnlyPieceErrorIdxRef = useRef(0);
   const passkeyBuffer = useRef("");
   const passkeyUsed = useRef(false);
@@ -334,6 +337,16 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   const openHintPlayedRef = useRef(false);
   const tipHelpAcknowledgedRef = useRef(false);
   const PASSKEY = "3200";
+  const timerGateSeenRef = useRef(false);
+
+  const markRedHelpSeen = useCallback(() => {
+    tipHelpAcknowledgedRef.current = true;
+    try {
+      window.sessionStorage.setItem(RED_HELP_SEEN_SESSION_KEY, "1");
+    } catch {
+      // ignore storage failures
+    }
+  }, []);
 
   // spacing must match CSSScroll
   const SPACING = 1000;
@@ -396,6 +409,26 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
         setExorcismLines(text.split("\n").filter((l) => l.trim())),
       )
       .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(RED_HELP_SEEN_SESSION_KEY) === "1") {
+        tipHelpAcknowledgedRef.current = true;
+      }
+    } catch {
+      // ignore storage failures
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(TIMER_GATE_SEEN_SESSION_KEY) === "1") {
+        timerGateSeenRef.current = true;
+      }
+    } catch {
+      // ignore storage failures
+    }
   }, []);
 
   useEffect(() => {
@@ -660,7 +693,11 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   const handleOpen = useCallback(() => {
     setIsOpen(true);
     hasOpenedRef.current = true;
-    if (phase === "boot-prompt" && openHintPlayedRef.current) {
+    if (
+      phase === "boot-prompt" &&
+      !bootCompletedRef.current &&
+      openHintPlayedRef.current
+    ) {
       setOpenHintText("help me");
       setOpenHintIsRed(false);
     }
@@ -722,9 +759,10 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       return;
     }
 
+    markRedHelpSeen();
     setOpenHintText("help");
     setOpenHintIsRed(true);
-  }, [allPiecesAt100, game, isOpen, isPrinting, phase]);
+  }, [allPiecesAt100, game, isOpen, isPrinting, markRedHelpSeen, phase]);
 
   // ── Boot submission ───────────────────────────────────────────────────────
   const handleBootSubmit = useCallback(
@@ -752,10 +790,14 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       if (bootStep < BOOT_STEPS.length - 1) {
         setBootStep((n) => n + 1);
       } else {
+        bootCompletedRef.current = true;
+        clearOpenHintTimers();
+        setOpenHintText("");
+        setOpenHintIsRed(false);
         setPhase("open");
       }
     },
-    [bootStep, game, printLine, printLines],
+    [bootStep, clearOpenHintTimers, game, printLine, printLines],
   );
 
   // ── Free command ──────────────────────────────────────────────────────────
@@ -783,7 +825,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
 
       // ── help ──────────────────────────────────────────────────────────────
       if (cmd === "help") {
-        tipHelpAcknowledgedRef.current = true;
+        markRedHelpSeen();
         setOpenHintText("");
         setOpenHintIsRed(false);
         await printLine("This is all I can give you.", "output", 35);
@@ -882,7 +924,18 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
         }
 
         const { ready } = game.checkTimerReady();
-        if (!ready && !passkeyUsed.current && !allPiecesAt100) {
+        if (
+          !ready &&
+          !passkeyUsed.current &&
+          !allPiecesAt100 &&
+          !timerGateSeenRef.current
+        ) {
+          timerGateSeenRef.current = true;
+          try {
+            window.sessionStorage.setItem(TIMER_GATE_SEEN_SESSION_KEY, "1");
+          } catch {
+            // ignore storage failures
+          }
           await printLine(game.getNextTimerError(), "error");
           return;
         }
@@ -1066,6 +1119,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       goToPiece,
       phase,
       cameraZ,
+      markRedHelpSeen,
       printLine,
       printLines,
       runOliviaLoop,
@@ -1083,7 +1137,8 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       if (isPrinting) return;
       const val = input.trim();
       setInput("");
-      if (phase === "boot-prompt") handleBootSubmit(val);
+      if (phase === "boot-prompt" && !bootCompletedRef.current)
+        handleBootSubmit(val);
       else handleCommand(val);
     },
     [input, isPrinting, phase, handleBootSubmit, handleCommand],
