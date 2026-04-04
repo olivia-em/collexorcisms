@@ -1,0 +1,1 @@
+function r({src:n,volume:o,registerAudioElement:u,onEnded:a}){const e=new Audio(n);e.preload="auto",e.volume=o;const c=u(e);return e.onended=a,{audio:e,cleanup:()=>{e.onended=null,e.pause(),e.currentTime=0,e.src="",c?.()}}}export{r as c};
