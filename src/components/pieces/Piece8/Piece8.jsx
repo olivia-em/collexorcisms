@@ -116,7 +116,7 @@ const Piece8 = () => {
     const newLines = allVersions[nextVersion];
     if (!newLines) return;
 
-    // First click — mark interacted so non-Olivia obits (Nick, AJ, Michael) unlock
+    // First click marks engagement for in-progress tracking.
     if (!hasInteracted) {
       setHasInteracted(true);
       markInteracted();

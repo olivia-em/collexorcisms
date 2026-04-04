@@ -11,11 +11,11 @@ const Piece9 = () => {
   const [spokenWordOpacity, setSpokenWordOpacity] = useState(0);
   const [montageOpacity, setMontageOpacity] = useState(1);
   const spokenWordVolumeCap = getPieceVolume("piece9");
-  const { markInteracted } = useTrackPiece("silhouettes");
+  const { markCompleted } = useTrackPiece("silhouettes");
   const handlePlay = async () => {
     try {
       setIsPlaying(true);
-      markInteracted();
+      markCompleted();
       if (spokenWordRef.current) {
         await spokenWordRef.current.play();
       }

@@ -432,16 +432,15 @@ function _checkObituaryUnlocks(changedSlug) {
     if (s.obituariesUnlocked[name]) return;
     const required = PERSON_PIECES[name];
 
-    // Olivia requires every piece fully completed (markCompleted / markVisited on visit-only).
-    // Everyone else unlocks on first meaningful interaction (markInteracted → completedPieces).
-    const checkMap =
-      name === "Olivia" ? s.fullyCompletedPieces : s.completedPieces;
+    // Obituaries unlock only from true completion state.
+    // Interactions alone (markInteracted) should never unlock an obituary.
+    const checkMap = s.fullyCompletedPieces;
 
     const done = required.filter((slug) => checkMap[slug]);
     const missing = required.filter((slug) => !checkMap[slug]);
     const allDone = missing.length === 0;
     debugLog(
-      `[Obit] Checking ${name} (${name === "Olivia" ? "fullyCompleted" : "completed"}): ${done.length}/${required.length}.`,
+      `[Obit] Checking ${name} (fullyCompleted): ${done.length}/${required.length}.`,
       allDone ? "\u2192 UNLOCKED" : `Missing: [${missing.join(", ")}]`,
     );
     if (allDone) {

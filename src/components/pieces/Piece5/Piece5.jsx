@@ -8,7 +8,7 @@ const Piece5 = () => {
   const [memory, setMemory] = useState("");
   const [outro, setOutro] = useState("");
   const [hallucination, setHallucination] = useState("");
-  const { markInteracted } = useTrackPiece("cass_ra");
+  const { markCompleted } = useTrackPiece("cass_ra");
   const questionSource = {
     origin:
       "#question#<br>recycle old words<br>no longer to read <br>you between lines",
@@ -133,7 +133,7 @@ const Piece5 = () => {
             onClick={(e) => {
               e.preventDefault();
               handleDownload();
-              markInteracted();
+              markCompleted();
             }}
             className={styles.ampersand}
           >

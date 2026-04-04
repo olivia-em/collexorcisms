@@ -21,7 +21,7 @@ const BLEND_MODES = [
 const Piece14 = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [blendModeIndex, setBlendModeIndex] = useState(0);
-  const { markInteracted } = useTrackPiece("s_curves"); // interaction: hover
+  const { markCompleted } = useTrackPiece("s_curves"); // completion: first hover
   useEffect(() => {
     if (!isHovering) return;
 
@@ -47,7 +47,7 @@ const Piece14 = () => {
         style={{ mixBlendMode: blendMode }}
         onMouseEnter={() => {
           setIsHovering(true);
-          markInteracted();
+          markCompleted();
         }}
         onMouseLeave={() => {
           setIsHovering(false);

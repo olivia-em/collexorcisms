@@ -12,14 +12,14 @@ function splitPreserveLines(text) {
 }
 
 const Piece19 = () => {
-  const { markInteracted } = useTrackPiece("first_on_first");
+  const { markCompleted } = useTrackPiece("first_on_first");
   const mountRef = useRef(null);
-  const markInteractedRef = useRef(markInteracted);
+  const markCompletedRef = useRef(markCompleted);
   const [pairs, setPairs] = useState([]);
 
   useEffect(() => {
-    markInteractedRef.current = markInteracted;
-  }, [markInteracted]);
+    markCompletedRef.current = markCompleted;
+  }, [markCompleted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,7 +204,7 @@ const Piece19 = () => {
             });
           }
           if (!hit) return false;
-          markInteractedRef.current?.();
+          markCompletedRef.current?.();
           if (DEBUG_BETWEEN) {
             console.log("[Piece19] between opened", betweenHref);
           }

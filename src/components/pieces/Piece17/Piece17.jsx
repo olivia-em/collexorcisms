@@ -24,7 +24,7 @@ const Piece17 = () => {
   const handleLinkClick = (e, pieceNumber, linkId) => {
     e.preventDefault();
 
-    // First interaction unlocks Adham's obituary
+    // First interaction marks engagement; obituary now unlocks on completion.
     if (!interactedOnceRef.current) {
       interactedOnceRef.current = true;
       markInteracted();

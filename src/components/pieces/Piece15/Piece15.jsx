@@ -10,7 +10,7 @@ const Piece15 = () => {
   const [operations, setOperations] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedLines, setCompletedLines] = useState(new Set());
-  const { markInteracted } = useTrackPiece("31");
+  const { markCompleted } = useTrackPiece("31");
   // Load the three text files on mount
   useEffect(() => {
     const loadFiles = async () => {
@@ -106,7 +106,7 @@ const Piece15 = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.inlineLink}
-                      onClick={markInteracted}
+                      onClick={markCompleted}
                     >
                       <AnimatedLine
                         operation={op}
@@ -142,7 +142,7 @@ const Piece15 = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.inlineLink}
-                      onClick={markInteracted}
+                      onClick={markCompleted}
                     >
                       <AnimatedLine
                         operation={op}

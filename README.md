@@ -8,7 +8,7 @@ Make sure all your changes are committed and pushed to the `main` branch:
 
 ```sh
 git add .
-git commit -m "Ready for GitHub Pages deploy"
+git commit -m "MESSAGE"
 git push origin main
 ```
 
