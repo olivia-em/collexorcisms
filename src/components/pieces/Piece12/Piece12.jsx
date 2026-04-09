@@ -18,6 +18,27 @@ const Piece12 = () => {
   const handleParasiteLink = useCallback(
     (linkId, filename) => {
       const url = `/assets/piece12/${filename}`;
+      if (
+        filename.toLowerCase().endsWith(".txt") &&
+        window.__COLLEX_OPEN_TXT__
+      ) {
+        if (window.__COLLEX_OPEN_TXT__(url)) {
+          setClickedLinks((prev) => {
+            const next = new Set(prev);
+            const wasEmpty = next.size === 0;
+            next.add(linkId);
+            trackParasiteLink(linkId);
+            if (wasEmpty) {
+              markInteracted();
+            }
+            if (next.has("oneside") && next.has("andtheother")) {
+              markCompleted();
+            }
+            return next;
+          });
+          return;
+        }
+      }
       window.open(url, "_blank", "noopener,noreferrer");
 
       setClickedLinks((prev) => {

@@ -17,6 +17,7 @@ import {
   TIP_UNLOCK_COUNT,
 } from "../../GameContext";
 import GlitchText from "../GlitchText";
+import useDraggableWindow from "./useDraggableWindow";
 
 const PROMPT_PREFIX = "olivialee@10-08-2001 % ";
 const COLS = 4;
@@ -139,7 +140,6 @@ function HelpLineContent({ raw }) {
 const BASE_HELP_LINES_RAW = [
   "ls : show directory contents",
   "cd : change directory # ex. cd justBones",
-  "map : where you are",
   "obit : come at the close # ex. obit N23 or obit Olivia",
   "help : show terminal commands",
 ];
@@ -217,92 +217,22 @@ function LockedObitName({ name }) {
   );
 }
 
-// ─── ASCII Map renderer ───────────────────────────────────────────────────────
-// Renders the map as JSX lines. Each line is a plain string for the map-row type.
-// youLabel: "you" or "Olivia" depending on mapRequestCount.
-// cameraZ: used to compute the user's position dot on the vertical axis.
-// Returns an array of { text, type } objects to feed into printLines.
-function buildMapLines({ slugs, game, youLabel, cameraZ, spacing }) {
-  const BOX_W = 22; // inner width of each box
-  const lines = [];
-
-  // Header
-  lines.push({ text: "", type: "output" });
-
-  // We render each slug as one row: [box][spacer][rail]
-  // The rail has a dot (●) at the position corresponding to the camera.
-  const numPieces = slugs.length;
-
-  // Compute the user's position in the list (0 = top piece, numPieces-1 = last)
-  // cameraZ: piece 1 = -200, piece N = -200 - (N-1)*spacing
-  // So pieceZ_i = -200 - i*spacing, i in 0..numPieces-1
-  // userPos = (cameraZ - (-200)) / -spacing  = (-200 - cameraZ) / spacing
-  const rawPos = (-200 - cameraZ) / spacing;
-  const clampedPos = Math.max(0, Math.min(numPieces - 1, rawPos));
-
-  slugs.forEach((slug, i) => {
-    const visited = game.state.visitedPieces[slug];
-    const pct = game.getPieceProgress(slug);
-    const title = visited ? PIECE_TITLES[slug] : "";
-    const pctStr = `${pct}%`;
-
-    // Build box content: "title          pct%"
-    // Truncate title to fit, right-align pct
-    const innerAvail = BOX_W;
-    const pctField = pctStr.padStart(4);
-    const titleAvail = innerAvail - pctField.length - 1;
-    const titleStr =
-      title.length > titleAvail
-        ? title.slice(0, titleAvail - 1) + "\u2026"
-        : title.padEnd(titleAvail);
-    const inner = titleStr + " " + pctField;
-
-    // Top border for first box
-    if (i === 0) {
-      lines.push({
-        text: `\u250C${"─".repeat(BOX_W + 2)}\u2510  \u2502`,
-        type: "output",
-      });
-    }
-
-    // Box row — determine if the dot goes on this line
-    // dot is placed at the row closest to clampedPos
-    const dotRow = Math.round(clampedPos);
-    const railChar = i === dotRow ? "●" : "\u2502";
-    const labelSuffix = i === dotRow ? ` \u2190 ${youLabel}` : "";
-
-    lines.push({
-      text: `\u2502 ${inner} \u2502  ${railChar}${labelSuffix}`,
-      type: "output",
-    });
-
-    // Separator between boxes, or bottom border
-    if (i < slugs.length - 1) {
-      lines.push({
-        text: `\u251C${"─".repeat(BOX_W + 2)}\u2524  \u2502`,
-        type: "output",
-      });
-    } else {
-      lines.push({
-        text: `\u2514${"─".repeat(BOX_W + 2)}\u2518  \u2502`,
-        type: "output",
-      });
-    }
-  });
-
-  lines.push({ text: "", type: "output" });
-  return lines;
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
+export default function Terminal({
+  onboardingDone = false,
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  hideLauncher = false,
+  zIndex = 9998,
+  onFocusRequest,
+}) {
   const { goToPiece } = useCamera();
   const game = useGame();
   const allPiecesAt100 = PIECE_SLUGS.every(
     (slug) => game.getPieceProgress(slug) >= 100,
   );
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [lines, setLines] = useState([]);
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState("boot-prompt");
@@ -320,6 +250,18 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   const [symbolsTick, setSymbolsTick] = useState(0);
   const [openHintText, setOpenHintText] = useState("");
   const [openHintIsRed, setOpenHintIsRed] = useState(false);
+  const { position, startDragging } = useDraggableWindow({ x: 24, y: 24 });
+
+  const isControlled = typeof controlledIsOpen === "boolean";
+  const isOpen = isControlled ? controlledIsOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (nextOpen) => {
+      if (!isControlled) setInternalOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, onOpenChange],
+  );
 
   const idRef = useRef(0);
   const inputRef = useRef(null);
@@ -347,9 +289,6 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       // ignore storage failures
     }
   }, []);
-
-  // spacing must match CSSScroll
-  const SPACING = 1000;
 
   const getNextOliviaOnlyPieceError = useCallback(() => {
     const msg =
@@ -699,7 +638,8 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
 
   // ── Open / close ──────────────────────────────────────────────────────────
   const handleOpen = useCallback(() => {
-    setIsOpen(true);
+    onFocusRequest?.();
+    setOpen(true);
     hasOpenedRef.current = true;
     if (
       phase === "boot-prompt" &&
@@ -709,10 +649,10 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       setOpenHintText("help me");
       setOpenHintIsRed(false);
     }
-  }, [phase]);
+  }, [onFocusRequest, phase, setOpen]);
 
   const handleClose = useCallback(() => {
-    setIsOpen(false);
+    setOpen(false);
     stopOliviaLoop();
     clearOpenHintTimers();
     setOpenHintText("");
@@ -723,7 +663,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       setOverlayOpacity(1);
       setPhase("open");
     }
-  }, [clearOpenHintTimers, phase, stopOliviaLoop]);
+  }, [clearOpenHintTimers, phase, setOpen, stopOliviaLoop]);
 
   useEffect(() => {
     if (
@@ -770,6 +710,15 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
     markRedHelpSeen();
     setOpenHintText("help");
     setOpenHintIsRed(true);
+
+    const dismissTimer = setTimeout(() => {
+      setOpenHintText("");
+      setOpenHintIsRed(false);
+    }, 2200);
+
+    return () => {
+      clearTimeout(dismissTimer);
+    };
   }, [allPiecesAt100, game, isOpen, isPrinting, markRedHelpSeen, phase]);
 
   // ── Boot submission ───────────────────────────────────────────────────────
@@ -881,7 +830,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
         goToPiece(pieceIdx);
         // Auto-close terminal after navigating
         setTimeout(() => {
-          setIsOpen(false);
+          setOpen(false);
           stopOliviaLoop();
         }, 500);
         return;
@@ -889,21 +838,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
 
       // ── map ───────────────────────────────────────────────────────────────
       if (cmd === "map") {
-        const count = game.incrementMapCount();
-        // "you" for first two requests, "Olivia" from third onward
-        const youLabel = count >= 3 ? "Olivia" : "you";
-
-        const mapLines = buildMapLines({
-          slugs: PIECE_SLUGS,
-          game,
-          youLabel,
-          cameraZ,
-          spacing: SPACING,
-        });
-
-        for (const { text, type } of mapLines) {
-          await printLine(text, type, 18);
-        }
+        await printLine("map is now a separate window", "hint", 20);
         return;
       }
 
@@ -1113,7 +1048,7 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       // ── find (legacy redirect) ────────────────────────────────────────────
       if (cmd === "find") {
         await printLine(
-          "ERROR: command not found: find \u2014 try: map",
+          "ERROR: command not found: find \u2014 use the map window",
           "error",
         );
         return;
@@ -1126,7 +1061,6 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       game,
       goToPiece,
       phase,
-      cameraZ,
       markRedHelpSeen,
       printLine,
       printLines,
@@ -1161,13 +1095,13 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
   return (
     <>
       {/* ── Minimized pill ── */}
-      {!isOpen && (
+      {!hideLauncher && !isOpen && (
         <button
           onClick={handleOpen}
           style={{
             position: "fixed",
             bottom: 24,
-            right: 55,
+            right: 128,
             zIndex: 9999,
             background: "#000",
             color: "#fff",
@@ -1197,212 +1131,201 @@ export default function Terminal({ onboardingDone = false, cameraZ = -200 }) {
       {/* ── Open window ── */}
       {isOpen && (
         <div
+          onMouseDown={() => onFocusRequest?.()}
+          onClick={() => {
+            inputRef.current?.focus();
+          }}
           onWheel={handleWheel}
           style={{
             position: "fixed",
-            inset: 0,
+            left: position.x,
+            top: position.y,
+            zIndex,
+            width: "min(700px, 92vw)",
+            height: "min(500px, 78vh)",
+            background: "#000",
+            border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: 4,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9998,
-            pointerEvents: "none",
+            flexDirection: "column",
+            boxShadow: "0 12px 48px rgba(0,0,0,0.9)",
+            fontFamily: "'Courier New', Courier, monospace",
+            fontSize: "14px",
+            fontWeight: 800,
+            lineHeight: "1.65",
+            overflow: "hidden",
+            cursor: "text",
+            opacity: glitching ? overlayOpacity : 1,
+            transition: "none",
           }}
         >
+          {/* Title bar */}
           <div
-            onClick={handleClose}
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.55)",
-              pointerEvents: "auto",
+            onMouseDown={(event) => {
+              onFocusRequest?.();
+              startDragging(event);
             }}
-          />
-          <div
-            onClick={() => inputRef.current?.focus()}
             style={{
-              position: "relative",
-              pointerEvents: "auto",
-              width: "min(700px, 92vw)",
-              height: "min(500px, 78vh)",
-              background: "#000",
-              border: "1px solid rgba(255,255,255,0.18)",
-              borderRadius: 4,
               display: "flex",
-              flexDirection: "column",
-              boxShadow: "0 12px 48px rgba(0,0,0,0.9)",
-              fontFamily: "'Courier New', Courier, monospace",
-              fontSize: "14px",
-              fontWeight: 800,
-              lineHeight: "1.65",
-              overflow: "hidden",
-              cursor: "text",
-              opacity: glitching ? overlayOpacity : 1,
-              transition: "none",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "7px 14px",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              flexShrink: 0,
+              cursor: "move",
+              userSelect: "none",
             }}
           >
-            {/* Title bar */}
-            <div
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "7px 14px",
-                borderBottom: "1px solid rgba(255,255,255,0.1)",
-                flexShrink: 0,
-                cursor: "default",
+                fontFamily: "'Jacquard12', serif",
+                fontSize: "0.95rem",
+                color: "#fff",
+                letterSpacing: "0.05em",
               }}
             >
-              <span
-                style={{
-                  fontFamily: "'Jacquard12', serif",
-                  fontSize: "0.95rem",
-                  color: "#fff",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                terminal
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClose();
-                }}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "rgba(255,255,255,0.35)",
-                  cursor: "pointer",
-                  fontSize: "1.1rem",
-                  lineHeight: 1,
-                  padding: "1px 4px",
-                  fontFamily: "monospace",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "rgba(255,255,255,0.35)")
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Output area */}
-            <div
-              ref={scrollRef}
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "14px 20px 12px",
-                scrollbarWidth: "thin",
-                scrollbarColor: "rgba(255,255,255,0.1) transparent",
-                position: "relative",
+              terminal
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
               }}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "rgba(255,255,255,0.35)",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                lineHeight: 1,
+                padding: "1px 4px",
+                fontFamily: "monospace",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "rgba(255,255,255,0.35)")
+              }
             >
-              {symbolsOverlay && <SymbolsOverlay tick={symbolsTick} />}
+              ×
+            </button>
+          </div>
 
-              {lines.map((line) => (
-                <LineRow
-                  key={line.id}
-                  line={line}
-                  game={game}
-                  glitching={glitching}
-                  glitchLevel={glitchLevel}
-                  symbolLevel={symbolLevel}
-                  glitchTick={glitchTick}
-                />
-              ))}
+          {/* Output area */}
+          <div
+            ref={scrollRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "14px 20px 12px",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(255,255,255,0.1) transparent",
+              position: "relative",
+            }}
+          >
+            {symbolsOverlay && <SymbolsOverlay tick={symbolsTick} />}
 
-              {/* Inline prompt */}
-              {!isPrinting && !symbolsOverlay && (
-                <div
+            {lines.map((line) => (
+              <LineRow
+                key={line.id}
+                line={line}
+                game={game}
+                glitching={glitching}
+                glitchLevel={glitchLevel}
+                symbolLevel={symbolLevel}
+                glitchTick={glitchTick}
+              />
+            ))}
+
+            {/* Inline prompt */}
+            {!isPrinting && !symbolsOverlay && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  position: "relative",
+                  minHeight: "1.65em",
+                }}
+              >
+                <span
                   style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    position: "relative",
-                    minHeight: "1.65em",
+                    color: "#c8c8c8",
+                    whiteSpace: "pre",
+                    flexShrink: 0,
                   }}
                 >
+                  {PROMPT_PREFIX}
+                </span>
+                {currentHint && !input && (
                   <span
                     style={{
-                      color: "#c8c8c8",
+                      position: "absolute",
+                      left: `${PROMPT_PREFIX.length}ch`,
+                      color: openHintIsRed ? "#e05555" : "#444",
+                      fontStyle: "italic",
+                      pointerEvents: "none",
                       whiteSpace: "pre",
-                      flexShrink: 0,
                     }}
                   >
-                    {PROMPT_PREFIX}
+                    {currentHint}
                   </span>
-                  {currentHint && !input && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: `${PROMPT_PREFIX.length}ch`,
-                        color: openHintIsRed ? "#e05555" : "#444",
-                        fontStyle: "italic",
-                        pointerEvents: "none",
-                        whiteSpace: "pre",
-                      }}
-                    >
-                      {currentHint}
-                    </span>
-                  )}
-                  <span
-                    style={{
-                      color: "#c8c8c8",
-                      whiteSpace: "pre",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    {input}
-                  </span>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: "7px",
-                      height: "13px",
-                      backgroundColor: "#c8c8c8",
-                      marginLeft: "1px",
-                      verticalAlign: "middle",
-                      animation: "termBlink 1s step-end infinite",
-                    }}
-                  />
-                </div>
-              )}
-              {isPrinting && !symbolsOverlay && (
+                )}
+                <span
+                  style={{
+                    color: "#c8c8c8",
+                    whiteSpace: "pre",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  {input}
+                </span>
                 <span
                   style={{
                     display: "inline-block",
                     width: "7px",
                     height: "13px",
-                    backgroundColor: "#555",
-                    marginLeft: "2px",
+                    backgroundColor: "#c8c8c8",
+                    marginLeft: "1px",
                     verticalAlign: "middle",
-                    animation: "termBlink 0.5s step-end infinite",
+                    animation: "termBlink 1s step-end infinite",
                   }}
                 />
-              )}
-            </div>
-
-            {/* Hidden input */}
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => !isPrinting && setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              style={{
-                position: "absolute",
-                opacity: 0,
-                pointerEvents: "none",
-                width: 0,
-                height: 0,
-              }}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
+              </div>
+            )}
+            {isPrinting && !symbolsOverlay && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "7px",
+                  height: "13px",
+                  backgroundColor: "#555",
+                  marginLeft: "2px",
+                  verticalAlign: "middle",
+                  animation: "termBlink 0.5s step-end infinite",
+                }}
+              />
+            )}
           </div>
+
+          {/* Hidden input */}
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => !isPrinting && setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{
+              position: "absolute",
+              opacity: 0,
+              pointerEvents: "none",
+              width: 0,
+              height: 0,
+            }}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+          />
         </div>
       )}
 

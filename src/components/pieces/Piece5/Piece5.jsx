@@ -87,6 +87,7 @@ const Piece5 = () => {
 
   const handleDownload = () => {
     const url = `${import.meta.env.BASE_URL}assets/piece5/cass_ra.txt`;
+    if (window.__COLLEX_OPEN_TXT__ && window.__COLLEX_OPEN_TXT__(url)) return;
     window.open(url, "_blank");
   };
 

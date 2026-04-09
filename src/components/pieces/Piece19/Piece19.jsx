@@ -208,6 +208,12 @@ const Piece19 = () => {
           if (DEBUG_BETWEEN) {
             console.log("[Piece19] between opened", betweenHref);
           }
+          if (
+            window.__COLLEX_OPEN_TXT__ &&
+            window.__COLLEX_OPEN_TXT__(betweenHref)
+          ) {
+            return true;
+          }
           window.open(betweenHref, "_blank", "noopener,noreferrer");
           return true;
         };

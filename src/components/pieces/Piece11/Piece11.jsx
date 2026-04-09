@@ -22,6 +22,10 @@ function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setCursorPos(0);
+    console.log("[Piece11] secret row submit clicked", {
+      rowIndex,
+      isSubmitted,
+    });
     if (isSubmitted) return;
     onSecretSubmit(rowIndex);
   };
@@ -79,6 +83,11 @@ const Piece11 = () => {
 
   const handleSecretSubmit = useCallback(
     (rowIndex) => {
+      console.log("[Piece11] handleSecretSubmit", {
+        rowIndex,
+        submittedRows,
+        submittedSet: Array.from(submittedSet),
+      });
       if (!interactedOnceRef.current) {
         interactedOnceRef.current = true;
         markInteracted();
@@ -91,10 +100,17 @@ const Piece11 = () => {
 
       // Open file on every third successful submission milestone.
       if (nextCount > 0 && nextCount % 3 === 0) {
-        window.open(
-          "/assets/piece11/secrets.txt",
-          "_blank",
-          "noopener,noreferrer",
+        const url = "/assets/piece11/secrets.txt";
+        console.log("[Piece11] dispatching txt popup event", {
+          rowIndex,
+          nextCount,
+          url,
+        });
+        if (window.__COLLEX_OPEN_TXT__?.(url)) {
+          return;
+        }
+        window.dispatchEvent(
+          new CustomEvent("collex:open-txt", { detail: url }),
         );
       }
     },

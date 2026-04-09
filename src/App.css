@@ -7,16 +7,16 @@
 
 body {
   position: relative;
-  background-color: rgba(0, 0, 50, 1);
+  background-color: rgba(0, 0, 0, 1);
   font-family: "Courier New", Courier, monospace;
   color: #333333;
-  width: 100vw;
-  height: 100vh;
+  width: var(--app-vw, 100vw);
+  height: var(--app-vh, 100vh);
   overflow: hidden;
 }
 
 .z-scroll-container {
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   display: flex;
@@ -24,7 +24,7 @@ body {
 }
 
 .z-piece {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   scroll-snap-align: start;
   display: flex;
   align-items: center;

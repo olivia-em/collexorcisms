@@ -10,6 +10,9 @@ const Piece4 = () => {
   const handleImageClick = (filename) => {
     trackMfFile(filename); // track which files have been opened
     const url = `${import.meta.env.BASE_URL}assets/piece4/${filename}`;
+    if (filename.toLowerCase().endsWith(".txt") && window.__COLLEX_OPEN_TXT__) {
+      if (window.__COLLEX_OPEN_TXT__(url)) return;
+    }
     window.open(url, "_blank");
   };
 

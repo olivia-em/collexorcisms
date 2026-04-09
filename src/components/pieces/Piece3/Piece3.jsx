@@ -69,6 +69,9 @@ white carpet stains,
     if (!filename) return;
     trackLofFile(filename); // track which files have been opened
     const url = `${import.meta.env.BASE_URL}assets/piece3/${filename}`;
+    if (filename.toLowerCase().endsWith(".txt") && window.__COLLEX_OPEN_TXT__) {
+      if (window.__COLLEX_OPEN_TXT__(url)) return;
+    }
     window.open(url, "_blank");
   };
 

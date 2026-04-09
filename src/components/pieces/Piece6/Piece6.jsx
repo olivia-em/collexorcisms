@@ -139,46 +139,88 @@ const Piece6 = () => {
   useEffect(() => {
     if (!groups.length) return;
     let p5Instance;
+    let refreshLayout = null;
+
     const sketch = (p) => {
       let w = 800;
       let h = 400;
-      p.setup = () => {
-        // Get dimensions from piece4Container
+      let wordFontSize = h * 0.025;
+      let firstGridFontSize = h * 0.02;
+      let animatedLineHeight = 18;
+      let firstGridLineHeight = 10;
+
+      const readContainerSize = () => {
         const parent = canvasRef.current?.parentElement;
-        if (parent) {
-          w = parent.offsetWidth;
-          h = parent.offsetHeight;
+        if (!parent) return null;
+        const nextW = Math.max(1, Math.floor(parent.clientWidth));
+        const nextH = Math.max(1, Math.floor(parent.clientHeight));
+        return { nextW, nextH };
+      };
+
+      const applySize = (force = false) => {
+        const next = readContainerSize();
+        if (!next) return;
+        const { nextW, nextH } = next;
+        if (!force && nextW === w && nextH === h) return;
+
+        w = nextW;
+        h = nextH;
+        wordFontSize = Math.max(10, h * 0.025);
+        firstGridFontSize = Math.max(8, h * 0.02);
+        animatedLineHeight = Math.max(12, wordFontSize * 1.35);
+        firstGridLineHeight = Math.max(8, firstGridFontSize * 1.2);
+
+        if (p.width !== w || p.height !== h) {
+          p.resizeCanvas(w, h);
         }
-        let wordFontSize = h * 0.025; // ~0.8vh
-        let firstGridFontSize = h * 0.02; // ~0.58vh
+      };
+
+      p.setup = () => {
         p.createCanvas(w, h).parent(canvasRef.current);
+        applySize(true);
+        refreshLayout = () => applySize();
         p.textAlign(p.CENTER, p.CENTER);
         p.noStroke();
         p.draw = () => {
+          applySize();
           p.background(0);
           // Draw static layer (first group)
-          if (groups[0]) {
+          if (groups[0]?.length) {
             p.fill(255, 0, 0);
             p.textSize(firstGridFontSize);
             p.textFont("Courier New");
             // Grid layout
             const padding = 0;
-            const cellWidth = 15; // px, adjust as needed
-            const cellHeight = 10; // px, adjust as needed
+            const sampleCount = Math.min(12, groups[0].length);
+            let sampleWidthTotal = 0;
+            for (let idx = 0; idx < sampleCount; idx += 1) {
+              sampleWidthTotal += p.textWidth(groups[0][idx].word);
+            }
+            const avgWordWidth =
+              sampleCount > 0
+                ? sampleWidthTotal / sampleCount
+                : firstGridFontSize;
+            const cellWidth = Math.max(
+              firstGridFontSize * 2.2,
+              avgWordWidth * 0.8,
+            );
+            const cellHeight = firstGridLineHeight;
             const cols = Math.max(1, Math.floor((w - padding * 2) / cellWidth));
-            const rows = Math.ceil(groups[0].length / cols);
-            for (let idx = 0; idx < groups[0].length; idx++) {
+            const rows = Math.max(1, Math.ceil((h - padding * 2) / cellHeight));
+            const totalCells = cols * rows;
+            for (let idx = 0; idx < totalCells; idx++) {
               const col = idx % cols;
               const row = Math.floor(idx / cols);
               const x = padding + col * cellWidth + cellWidth / 2;
               const y = padding + row * cellHeight + cellHeight / 2;
+              const word = groups[0][idx % groups[0].length].word;
               // Text shadow effect
               p.push();
               p.fill(0, 0, 0, 80);
-              p.text(groups[0][idx].word, x + 0.5, y + 0.5);
+              p.text(word, x + 0.5, y + 0.5);
               p.pop();
               p.fill(255, 0, 0);
-              p.text(groups[0][idx].word, x, y);
+              p.text(word, x, y);
             }
           }
           // Draw animated layers
@@ -197,7 +239,10 @@ const Piece6 = () => {
               // Animate word individually on x
               const x =
                 w / 2 + Math.sin(p.millis() * 0.001 * speed + i) * amplitudeX;
-              const y = h / 2 + (i - groups[g].length / 2) * 18 + groupYOffset;
+              const y =
+                h / 2 +
+                (i - groups[g].length / 2) * animatedLineHeight +
+                groupYOffset;
               p.push();
               p.fill(0, 255, 255, 80);
               p.text(groups[g][i].word, x + 2, y + 2);
@@ -210,8 +255,30 @@ const Piece6 = () => {
         };
       };
     };
+
     p5Instance = new p5(sketch);
+
+    const runLayoutRefresh = () => {
+      if (!refreshLayout) return;
+      window.requestAnimationFrame(refreshLayout);
+    };
+
+    const resizeObserver = new ResizeObserver(runLayoutRefresh);
+    if (canvasRef.current?.parentElement) {
+      resizeObserver.observe(canvasRef.current.parentElement);
+    }
+
+    window.addEventListener("resize", runLayoutRefresh);
+    window.addEventListener("orientationchange", runLayoutRefresh);
+    document.addEventListener("fullscreenchange", runLayoutRefresh);
+    window.visualViewport?.addEventListener("resize", runLayoutRefresh);
+
     return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", runLayoutRefresh);
+      window.removeEventListener("orientationchange", runLayoutRefresh);
+      document.removeEventListener("fullscreenchange", runLayoutRefresh);
+      window.visualViewport?.removeEventListener("resize", runLayoutRefresh);
       if (p5Instance) p5Instance.remove();
     };
   }, [groups]);

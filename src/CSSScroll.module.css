@@ -28,8 +28,8 @@
 }
 .container {
   /* background-color: rgb(26, 26, 46); */
-  min-height: 100vh;
-  width: 100vw;
+  min-height: var(--app-vh, 100vh);
+  width: var(--app-vw, 100vw);
   display: flex;
   flex-direction: column;
   align-items: center;
