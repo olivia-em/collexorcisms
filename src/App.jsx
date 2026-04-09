@@ -18,8 +18,9 @@ import { AmbientAudioProvider, useAmbientAudio } from "./AmbientAudioContext";
 const SURVEY_URL = "https://forms.gle/Uu7xPm1TriJKTcVUA";
 const BOOK_URL =
   "https://www.lulu.com/shop/olivia-lee/collected-exorcisms/paperback/product-kv679gk.html?page=1&pageSize=4";
-const TXT_SESSION_KEY = "collex.achievedTxtWindows";
-const ONBOARDING_SESSION_KEY = "collex.onboardingComplete";
+const GAME_STORAGE_KEY = "collex-game";
+const TXT_STORAGE_KEY = "collex.achievedTxtWindows";
+const ONBOARDING_STORAGE_KEY = "collex.onboardingComplete";
 
 function normalizeTxtUrlString(rawUrl) {
   const normalized = normalizeTxtUrl(rawUrl);
@@ -117,7 +118,9 @@ const ACHIEVED_TXT_SOURCES = [
 
 function readAchievedTxtWindows() {
   try {
-    const raw = window.sessionStorage.getItem(TXT_SESSION_KEY);
+    const raw =
+      window.localStorage.getItem(TXT_STORAGE_KEY) ||
+      window.sessionStorage.getItem(TXT_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -155,9 +158,23 @@ function writeAchievedTxtWindows(entries) {
       title: entry.title,
       content: entry.content || "",
     }));
-    window.sessionStorage.setItem(TXT_SESSION_KEY, JSON.stringify(payload));
+    const serialized = JSON.stringify(payload);
+    window.localStorage.setItem(TXT_STORAGE_KEY, serialized);
+    window.sessionStorage.setItem(TXT_STORAGE_KEY, serialized);
   } catch {
-    // ignore session storage failures
+    // ignore storage failures
+  }
+}
+
+function hasPersistedCollexData() {
+  try {
+    return Boolean(
+      window.localStorage.getItem(ONBOARDING_STORAGE_KEY) ||
+      window.localStorage.getItem(TXT_STORAGE_KEY) ||
+      window.localStorage.getItem(GAME_STORAGE_KEY),
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -445,7 +462,11 @@ function AppInner() {
   const { startAmbient, isMuted, toggleMute } = useAmbientAudio();
   const [onboardingDone, setOnboardingDone] = useState(() => {
     try {
-      return window.sessionStorage.getItem(ONBOARDING_SESSION_KEY) === "1";
+      return (
+        window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === "1" ||
+        window.sessionStorage.getItem(ONBOARDING_STORAGE_KEY) === "1" ||
+        hasPersistedCollexData()
+      );
     } catch {
       return false;
     }
@@ -755,9 +776,10 @@ function AppInner() {
 
   const handleOnboardingComplete = () => {
     try {
-      window.sessionStorage.setItem(ONBOARDING_SESSION_KEY, "1");
+      window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+      window.sessionStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
     } catch {
-      // ignore session storage failures
+      // ignore storage failures
     }
     setOnboardingDone(true);
   };
