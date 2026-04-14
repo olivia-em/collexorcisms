@@ -629,6 +629,7 @@ export default function Terminal({
         onStutterDone: () => {
           try {
             localStorage.clear();
+            sessionStorage.clear();
           } catch {}
           window.location.reload();
         },
@@ -1214,12 +1215,12 @@ export default function Terminal({
           {/* Output area */}
           <div
             ref={scrollRef}
+            className="popupScrollArea"
             style={{
               flex: 1,
               overflowY: "auto",
               padding: "14px 20px 12px",
               scrollbarWidth: "thin",
-              scrollbarColor: "rgba(255,255,255,0.1) transparent",
               position: "relative",
             }}
           >

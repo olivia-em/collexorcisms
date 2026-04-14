@@ -8,7 +8,7 @@ Make sure all your changes are committed and pushed to the `main` branch:
 
 ```sh
 git add .
-git commit -m "persistance"
+git commit -m "finishing"
 git push origin main
 ```
 

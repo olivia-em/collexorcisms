@@ -293,6 +293,7 @@ function TxtPopupWindow({ entry, onClose, zIndex = 9998, onFocusRequest }) {
           fontSize: "13px",
           fontWeight: 700,
         }}
+        className="popupScrollArea"
       >
         {entry.error && entry.error}
         {!entry.loading && !entry.error && entry.content}

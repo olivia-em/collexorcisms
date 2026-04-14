@@ -20,6 +20,30 @@ body {
   animation: appFadeIn 900ms ease-out forwards;
 }
 
+.popupScrollArea {
+  scrollbar-width: thin;
+  scrollbar-color: #440000 #000;
+}
+
+.popupScrollArea::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.popupScrollArea::-webkit-scrollbar-track {
+  background: #000;
+}
+
+.popupScrollArea::-webkit-scrollbar-thumb {
+  background: #e05555;
+  border: 2px solid #000;
+  border-radius: 999px;
+}
+
+.popupScrollArea::-webkit-scrollbar-thumb:hover {
+  background: #ff4b4b;
+}
+
 @keyframes appFadeIn {
   from {
     opacity: 0;

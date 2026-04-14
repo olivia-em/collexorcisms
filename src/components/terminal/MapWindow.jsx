@@ -229,6 +229,7 @@ export default function MapWindow({
 
           <div
             onWheelCapture={containWheel}
+            className="popupScrollArea"
             style={{
               flex: 1,
               overflowY: "auto",

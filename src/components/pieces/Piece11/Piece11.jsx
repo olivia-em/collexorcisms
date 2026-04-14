@@ -3,7 +3,7 @@ import styles from "./Piece11.module.css";
 import { useGame } from "../../../GameContext";
 import useTrackPiece from "../../../useTrackPiece";
 
-function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
+function SecretRow({ rowIndex, onSecretSubmit, onSubmitAttempt, isSubmitted }) {
   const [preposition, setPreposition] = useState("with");
   const [cursorPos, setCursorPos] = useState(0);
   const inputRef = useRef(null);
@@ -26,6 +26,7 @@ function SecretRow({ rowIndex, onSecretSubmit, isSubmitted }) {
       rowIndex,
       isSubmitted,
     });
+    onSubmitAttempt?.(rowIndex);
     if (isSubmitted) return;
     onSecretSubmit(rowIndex);
   };
@@ -74,12 +75,34 @@ const Piece11 = () => {
   const { state, trackSecretSubmit } = useGame();
   const { markInteracted, markCompleted } = useTrackPiece("secrets");
   const interactedOnceRef = useRef(false);
+  const secretSubmitAttemptCountRef = useRef(0);
   const submittedSet = new Set(state.secretRowsSubmitted ?? []);
   const submittedRows = [
     submittedSet.has(0),
     submittedSet.has(1),
     submittedSet.has(2),
   ];
+
+  const openSecretsTxtPopup = useCallback(() => {
+    const url = "/assets/piece11/secrets.txt";
+    console.log("[Piece11] dispatching txt popup event", { url });
+    if (window.__COLLEX_OPEN_TXT__?.(url)) {
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("collex:open-txt", { detail: url }));
+  }, []);
+
+  const handleSubmitAttempt = useCallback(
+    (rowIndex) => {
+      const nextCount = secretSubmitAttemptCountRef.current + 1;
+      secretSubmitAttemptCountRef.current = nextCount;
+
+      if (nextCount % 3 === 0) {
+        openSecretsTxtPopup();
+      }
+    },
+    [openSecretsTxtPopup],
+  );
 
   const handleSecretSubmit = useCallback(
     (rowIndex) => {
@@ -94,27 +117,9 @@ const Piece11 = () => {
       }
 
       if (submittedSet.has(rowIndex)) return;
-
-      const nextCount = submittedRows.filter(Boolean).length + 1;
       trackSecretSubmit(rowIndex);
-
-      // Open file on every third successful submission milestone.
-      if (nextCount > 0 && nextCount % 3 === 0) {
-        const url = "/assets/piece11/secrets.txt";
-        console.log("[Piece11] dispatching txt popup event", {
-          rowIndex,
-          nextCount,
-          url,
-        });
-        if (window.__COLLEX_OPEN_TXT__?.(url)) {
-          return;
-        }
-        window.dispatchEvent(
-          new CustomEvent("collex:open-txt", { detail: url }),
-        );
-      }
     },
-    [markInteracted, submittedRows, submittedSet, trackSecretSubmit],
+    [markInteracted, submittedSet, trackSecretSubmit],
   );
 
   React.useEffect(() => {
@@ -131,16 +136,19 @@ const Piece11 = () => {
         <SecretRow
           rowIndex={0}
           onSecretSubmit={handleSecretSubmit}
+          onSubmitAttempt={handleSubmitAttempt}
           isSubmitted={submittedRows[0]}
         />
         <SecretRow
           rowIndex={1}
           onSecretSubmit={handleSecretSubmit}
+          onSubmitAttempt={handleSubmitAttempt}
           isSubmitted={submittedRows[1]}
         />
         <SecretRow
           rowIndex={2}
           onSecretSubmit={handleSecretSubmit}
+          onSubmitAttempt={handleSubmitAttempt}
           isSubmitted={submittedRows[2]}
         />
       </div>
