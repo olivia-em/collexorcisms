@@ -183,7 +183,7 @@ const Piece6 = () => {
         p.noStroke();
         p.draw = () => {
           applySize();
-          p.background(0);
+          p.clear();
           // Draw static layer (first group)
           if (groups[0]?.length) {
             p.fill(255, 0, 0);

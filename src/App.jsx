@@ -21,6 +21,7 @@ const BOOK_URL =
 const GAME_STORAGE_KEY = "collex-game";
 const TXT_STORAGE_KEY = "collex.achievedTxtWindows";
 const ONBOARDING_STORAGE_KEY = "collex.onboardingComplete";
+const INVERT_SCROLL_STORAGE_KEY = "collex.invertScroll";
 
 function normalizeTxtUrlString(rawUrl) {
   const normalized = normalizeTxtUrl(rawUrl);
@@ -460,7 +461,7 @@ function AppInner() {
   const game = useGame();
   const { startTimer } = game;
   const { startAmbient, isMuted, toggleMute } = useAmbientAudio();
-  const [onboardingDone, setOnboardingDone] = useState(() => {
+  const [wasReturningUser] = useState(() => {
     try {
       return (
         window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === "1" ||
@@ -471,8 +472,17 @@ function AppInner() {
       return false;
     }
   });
+  const [onboardingDone, setOnboardingDone] = useState(wasReturningUser);
   const [cameraZ, setCameraZ] = useState(-200);
   const [showDesktopOverlay, setShowDesktopOverlay] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [invertScroll, setInvertScroll] = useState(() => {
+    try {
+      return window.localStorage.getItem(INVERT_SCROLL_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [txtWindows, setTxtWindows] = useState(() =>
@@ -485,6 +495,7 @@ function AppInner() {
   const txtFetchInFlightRef = useRef(new Set());
   const zCounterRef = useRef(10000);
   const appStartedRef = useRef(false);
+  const infoMenuRef = useRef(null);
 
   const getNextZIndex = useCallback(() => {
     zCounterRef.current += 1;
@@ -723,6 +734,42 @@ function AppInner() {
   const openTxtWindows = txtWindows.filter((entry) => entry.isOpen);
   const audioIconSrc = `${import.meta.env.BASE_URL}assets/body/${isMuted ? "muted.png" : "sound.png"}`;
 
+  const toggleInvertScroll = useCallback(() => {
+    setInvertScroll((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(
+          INVERT_SCROLL_STORAGE_KEY,
+          next ? "1" : "0",
+        );
+      } catch {
+        // ignore storage failures
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isInfoOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (infoMenuRef.current?.contains(event.target)) return;
+      setIsInfoOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsInfoOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isInfoOpen]);
+
   useEffect(() => {
     const derived = deriveAchievedTxtWindows(game.state);
     if (derived.length === 0) return;
@@ -799,6 +846,7 @@ function AppInner() {
     >
       {!onboardingDone && <Onboarding onComplete={handleOnboardingComplete} />}
       <div
+        className={wasReturningUser ? "appFadeInShell" : undefined}
         style={{
           height: "var(--app-vh, 100vh)",
           width: "var(--app-vw, 100vw)",
@@ -879,27 +927,101 @@ function AppInner() {
               terminal
             </button>
 
-            <button
-              onClick={toggleMute}
-              style={dockButtonStyle}
-              onMouseEnter={dockButtonHoverIn}
-              onMouseLeave={dockButtonHoverOut}
-              aria-label={isMuted ? "unmute audio" : "mute audio"}
-              title={isMuted ? "Unmute" : "Mute"}
+            <div
+              ref={infoMenuRef}
+              style={{ position: "relative", display: "inline-flex" }}
             >
-              <img
-                src={audioIconSrc}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                style={{
-                  width: 12,
-                  height: 12,
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </button>
+              <button
+                onClick={() => setIsInfoOpen((prev) => !prev)}
+                style={dockButtonStyle}
+                onMouseEnter={dockButtonHoverIn}
+                onMouseLeave={dockButtonHoverOut}
+                aria-label="open settings"
+                aria-expanded={isInfoOpen}
+                title="Settings"
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}assets/body/tool.png`}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{
+                    width: 14,
+                    height: 14,
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              </button>
+
+              {isInfoOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    bottom: 38,
+                    minWidth: 170,
+                    background: "rgba(0,0,0,0.94)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 4,
+                    padding: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    boxShadow: "0 12px 34px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  <button
+                    onClick={toggleMute}
+                    style={{
+                      ...dockButtonStyle,
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                    onMouseEnter={dockButtonHoverIn}
+                    onMouseLeave={dockButtonHoverOut}
+                    aria-label={isMuted ? "unmute audio" : "mute audio"}
+                    title={isMuted ? "Unmute" : "Mute"}
+                  >
+                    <span>volume</span>
+                    <img
+                      src={audioIconSrc}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      style={{
+                        width: 12,
+                        height: 12,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  </button>
+
+                  <button
+                    onClick={toggleInvertScroll}
+                    style={{
+                      ...dockButtonStyle,
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                    onMouseEnter={dockButtonHoverIn}
+                    onMouseLeave={dockButtonHoverOut}
+                    aria-label={
+                      invertScroll
+                        ? "disable invert scroll"
+                        : "enable invert scroll"
+                    }
+                    title="Invert scroll"
+                  >
+                    <span>invert scroll</span>
+                    <span style={{ opacity: 0.85 }}>
+                      {invertScroll ? "on" : "off"}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -907,6 +1029,7 @@ function AppInner() {
           <ThreeScroll
             setGoToPiece={(fn) => (goToPieceRef.current = fn)}
             onCameraZChange={setCameraZ}
+            invertScroll={invertScroll}
           />
         ) : (
           <CompletionDesktop />

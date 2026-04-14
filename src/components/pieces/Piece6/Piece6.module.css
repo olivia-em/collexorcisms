@@ -20,7 +20,7 @@
   opacity: 1;
 }
 .piece6Container {
-  background: #000;
+  background: transparent;
   width: 100%;
   height: 100%;
   position: relative;

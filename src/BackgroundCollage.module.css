@@ -5,7 +5,7 @@
   height: var(--app-vh, 100vh);
   overflow: hidden;
   pointer-events: none;
-  z-index: -2;
+  z-index: 0;
 }
 
 .img1 {

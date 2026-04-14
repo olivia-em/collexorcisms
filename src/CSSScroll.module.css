@@ -17,6 +17,7 @@
   perspective: 1000px;
   perspective-origin: 50% 50%;
   mix-blend-mode: screen;
+  z-index: 2;
 }
 
 .preserve3dWrap {
@@ -27,7 +28,6 @@
   transition: transform 0.2s ease-out;
 }
 .container {
-  /* background-color: rgb(26, 26, 46); */
   min-height: var(--app-vh, 100vh);
   width: var(--app-vw, 100vw);
   display: flex;
@@ -35,5 +35,3 @@
   align-items: center;
   justify-content: center;
 }
-
-/* Add more styles as needed for CSSScroll children/components */

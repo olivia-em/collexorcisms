@@ -7,7 +7,7 @@
 
 .skyContainer {
   /* font-family: "Courier New", Courier, monospace; */
-  background-color: black;
+  background-color: transparent;
   color: white;
   width: 100vw;
   height: 50vh;
@@ -89,7 +89,7 @@
 
 .poetryPage {
   text-align: center;
-  background: #000;
+  background: transparent;
   padding: 0vh 1vw;
   display: flex;
   text-align: center;

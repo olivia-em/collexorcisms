@@ -42,6 +42,7 @@ export function AmbientAudioProvider({ children }) {
   const ambientRef = useRef(null);
   const ambientUnregisterRef = useRef(null);
   const startedRef = useRef(false);
+  const [ambientRetryPending, setAmbientRetryPending] = useState(false);
   const audioContextRef = useRef(null);
   const masterGainRef = useRef(null);
   const entriesByKeyRef = useRef(new Map());
@@ -180,8 +181,36 @@ export function AmbientAudioProvider({ children }) {
     pieceDistanceByAudioKeyRef.current.set(audioKey, distance);
   }, []);
 
+  const cleanupAmbient = useCallback((audio) => {
+    if (!audio) return;
+    ambientUnregisterRef.current?.();
+    ambientUnregisterRef.current = null;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.src = "";
+    if (ambientRef.current === audio) {
+      ambientRef.current = null;
+    }
+  }, []);
+
+  const isAmbientPlaying = useCallback(() => {
+    const ambient = ambientRef.current;
+    if (!ambient) return false;
+    return !ambient.paused && !ambient.ended && ambient.currentTime > 0;
+  }, []);
+
   const startAmbient = useCallback(() => {
-    if (startedRef.current) return;
+    if (isAmbientPlaying()) {
+      startedRef.current = true;
+      setAmbientRetryPending(false);
+      return;
+    }
+
+    const existingAmbient = ambientRef.current;
+    if (existingAmbient) {
+      cleanupAmbient(existingAmbient);
+      startedRef.current = false;
+    }
 
     const src = `${import.meta.env.BASE_URL}assets/body/confessions_extended.mp3`;
     const audio = new Audio(src);
@@ -194,25 +223,60 @@ export function AmbientAudioProvider({ children }) {
 
     ambientRef.current = audio;
     startedRef.current = true;
+    setAmbientRetryPending(false);
     ambientUnregisterRef.current = registerAudioElement("ambient", audio);
 
-    audio.play().catch(() => {
-      // If autoplay is blocked, allow retry on next user gesture.
-      startedRef.current = false;
-    });
-  }, [audioLevels.ambient, registerAudioElement]);
+    audio
+      .play()
+      .then(() => {
+        startedRef.current = true;
+        setAmbientRetryPending(false);
+      })
+      .catch(() => {
+        // If autoplay is blocked, allow retry on next user gesture.
+        startedRef.current = false;
+        setAmbientRetryPending(true);
+      });
+  }, [
+    audioLevels.ambient,
+    cleanupAmbient,
+    isAmbientPlaying,
+    registerAudioElement,
+  ]);
 
   const stopAmbient = useCallback(() => {
     const audio = ambientRef.current;
     if (!audio) return;
-    ambientUnregisterRef.current?.();
-    ambientUnregisterRef.current = null;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.src = "";
-    ambientRef.current = null;
+    cleanupAmbient(audio);
     startedRef.current = false;
-  }, []);
+    setAmbientRetryPending(false);
+  }, [cleanupAmbient]);
+
+  useEffect(() => {
+    if (!ambientRetryPending) return undefined;
+
+    const retryStart = () => {
+      if (!ambientRetryPending || isAmbientPlaying()) return;
+      const ctx = audioContextRef.current;
+      if (ctx?.state === "suspended") {
+        ctx.resume().catch(() => {
+          // Still not in an accepted gesture context.
+        });
+      }
+      startAmbient();
+    };
+
+    const opts = { capture: true, passive: true };
+    document.addEventListener("pointerdown", retryStart, opts);
+    document.addEventListener("keydown", retryStart, true);
+    document.addEventListener("touchstart", retryStart, opts);
+
+    return () => {
+      document.removeEventListener("pointerdown", retryStart, opts);
+      document.removeEventListener("keydown", retryStart, true);
+      document.removeEventListener("touchstart", retryStart, opts);
+    };
+  }, [ambientRetryPending, isAmbientPlaying, startAmbient]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {

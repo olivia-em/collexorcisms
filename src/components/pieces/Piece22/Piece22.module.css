@@ -10,7 +10,7 @@
   width: 100vw;
   height: 50vh;
   overflow: hidden;
-  background: #000;
+  background: transparent;
 }
 
 .citeLink {

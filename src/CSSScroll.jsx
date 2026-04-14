@@ -185,10 +185,9 @@ function Piece({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#000",
+            background: "transparent",
             color: "rgba(255, 255, 255, 0.95)",
             borderRadius: "0px",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
             opacity: finalOpacity,
             transition: flickering ? "none" : "opacity 0.1s",
             pointerEvents:
@@ -213,7 +212,11 @@ function Piece({
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
+export default function ThreeScroll({
+  setGoToPiece,
+  onCameraZChange,
+  invertScroll = false,
+}) {
   const [cameraZ, setCameraZ] = useState(-200);
   const scrollRef = useRef(-200);
   const rafRef = useRef(null);
@@ -259,7 +262,8 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
 
     const onWheel = (e) => {
       e.preventDefault();
-      scrollRef.current -= e.deltaY;
+      const wheelDelta = invertScroll ? -e.deltaY : e.deltaY;
+      scrollRef.current -= wheelDelta;
       scrollRef.current = Math.max(minZ, Math.min(maxZ, scrollRef.current));
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(flushScroll);
@@ -285,7 +289,7 @@ export default function ThreeScroll({ setGoToPiece, onCameraZChange }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       document.body.style.overflow = "";
     };
-  }, [minZ, maxZ]);
+  }, [invertScroll, minZ, maxZ]);
 
   useEffect(() => {
     onCameraZChange?.(cameraZ);
