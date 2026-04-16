@@ -209,7 +209,7 @@ function normalizeTxtUrl(rawUrl) {
 }
 
 function TxtPopupWindow({ entry, onClose, zIndex = 9998, onFocusRequest }) {
-  const { position, startDragging } = useDraggableWindow({
+  const { position, startDragging, isDragging } = useDraggableWindow({
     x: entry.initialX,
     y: entry.initialY,
   });
@@ -246,7 +246,7 @@ function TxtPopupWindow({ entry, onClose, zIndex = 9998, onFocusRequest }) {
           justifyContent: "space-between",
           padding: "7px 14px",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
-          cursor: "move",
+          cursor: isDragging ? "grabbing" : "grab",
           userSelect: "none",
           flexShrink: 0,
         }}

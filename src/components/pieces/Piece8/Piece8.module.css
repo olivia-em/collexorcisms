@@ -8,26 +8,27 @@
 .piece8Container {
   display: flex;
   flex-direction: column;
-  width: 90%;
+  container-type: size;
+  width: 100%;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100%;
   gap: 2rem;
 }
 
 .h2Title {
-  font-size: 1rem;
+  font-size: clamp(0.95rem, 0.6rem + 1.6cqb, 1.5rem);
   color: cyan;
   margin-bottom: 0rem;
   font-family: "Jacquard12", monospace;
 }
 
 .poemText {
-  font-size: 0.5rem;
+  font-size: clamp(0.5rem, 0.35rem + 1.15cqb, 0.9rem);
   font-weight: 800;
   text-align: left;
   max-width: 600px;
-  line-height: 1.7;
+  line-height: 1.25;
   margin: 0;
   padding: 0;
 }
@@ -37,6 +38,8 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .poemHeader {
@@ -50,6 +53,9 @@
   justify-content: center;
   gap: 2rem;
   width: min(100%, 960px);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 .column {
@@ -59,6 +65,8 @@
   text-align: left;
   flex: 1 1 0;
   max-width: 460px;
+  min-height: 0;
+  overflow: visible;
 }
 
 .column:nth-child(2) {
@@ -68,7 +76,7 @@
 
 .titleButton {
   font-family: "Jacquard12", monospace;
-  font-size: 1rem;
+  font-size: clamp(0.95rem, 0.6rem + 1.6cqb, 1.5rem);
   background-color: transparent;
   color: cyan;
   border: none;
@@ -99,6 +107,9 @@
 }
 
 .line {
-  min-height: 1.2em;
-  white-space: pre-wrap;
+  min-height: 1.1em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow: visible;
 }

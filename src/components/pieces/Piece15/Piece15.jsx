@@ -93,7 +93,7 @@ const Piece15 = () => {
       <div className={styles.poemLayout}>
         <div className={styles.columns}>
           <div className={`${styles.poemText} ${styles.column}`}>
-            {operations.slice(0, 19).map((op, index) => {
+            {operations.map((op, index) => {
               const isLastLine = index === lastLineIndex;
               return (
                 <div
@@ -118,42 +118,6 @@ const Piece15 = () => {
                     <AnimatedLine
                       operation={op}
                       lineIndex={index}
-                      onComplete={handleLineComplete}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div
-            className={`${styles.poemText} ${styles.column} ${styles.rightColumn}`}
-          >
-            {operations.slice(19).map((op, index) => {
-              const lineIndex = index + 19;
-              const isLastLine = lineIndex === lastLineIndex;
-              return (
-                <div
-                  key={`${currentVersion}-${lineIndex}`}
-                  className={styles.line}
-                >
-                  {isLastLine && isSappho31 ? (
-                    <a
-                      href="https://www.uh.edu/~cldue/texts/sappho.html"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.inlineLink}
-                      onClick={markCompleted}
-                    >
-                      <AnimatedLine
-                        operation={op}
-                        lineIndex={lineIndex}
-                        onComplete={handleLineComplete}
-                      />
-                    </a>
-                  ) : (
-                    <AnimatedLine
-                      operation={op}
-                      lineIndex={lineIndex}
                       onComplete={handleLineComplete}
                     />
                   )}

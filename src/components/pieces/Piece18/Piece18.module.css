@@ -9,6 +9,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  container-type: size;
   width: 100%;
   height: 100%;
   background-color: black;
@@ -36,7 +37,7 @@
   box-shadow: inset 0 0 100px rgba(255, 255, 255, 0.3);
 } */
 
-.preloadOverlay:hover .preloadText {
+.preloadText:hover {
   /* text-shadow:
     0 0 20px white,
     0 0 40px white; */
@@ -45,9 +46,10 @@
 
 .preloadText {
   font-family: "Jacquard12", serif;
-  font-size: 2.2rem;
+  font-size: clamp(1.45rem, 0.7rem + 2.2cqb, 2.5rem);
   letter-spacing: 1px;
   text-align: center;
+  transition: color 0.35s ease-in-out;
 }
 
 .blinkingCursor {
@@ -79,7 +81,7 @@
 
 .quotes {
   font-family: "Jacquard12";
-  font-size: 10px;
+  font-size: clamp(0.52rem, 0.28rem + 0.9cqb, 0.9rem);
   color: white;
   margin: 0;
 }
@@ -105,8 +107,8 @@
   justify-content: space-around;
   align-items: center;
   flex-wrap: wrap;
-  width: 70vw;
-  height: auto;
+  width: min(70cqi, 900px);
+  max-height: 90cqb;
   z-index: 2;
   text-align: center;
   background-color: red;
@@ -144,6 +146,6 @@
 
 .poem h1 {
   margin: 0;
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 0.55rem + 1.3cqb, 1.3rem);
   font-weight: normal;
 }

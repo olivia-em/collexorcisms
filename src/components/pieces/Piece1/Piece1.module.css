@@ -39,7 +39,7 @@
 .folderIcon {
   display: block;
   line-height: 0;
-  filter: drop-shadow(0 0 0px #6daeff);
+  filter: drop-shadow(0 0 0px #ff6d6d);
   transition: filter 0.25s ease;
 }
 
@@ -102,10 +102,10 @@
 
 .imageFrame {
   position: relative;
-  border: 1px solid rgba(0, 255, 255, 0.55);
+  /* border: 1px solid rgba(0, 255, 255, 0.55); */
   border-radius: 0;
   box-shadow:
-    0 0 22px rgba(0, 255, 255, 0.5),
+    0 0 22px rgba(0, 255, 255, 0.9),
     0 0 46px rgba(0, 255, 255, 0.28),
     inset 0 0 16px rgba(0, 255, 255, 0.18);
   background: #000;
@@ -128,7 +128,7 @@
   right: 8px;
   border: none;
   background: transparent;
-  color: #00ffff;
+  color: #9efcff;
   font-family: "Courier New", Courier, monospace;
   font-size: 30px;
   font-weight: 700;
@@ -138,6 +138,7 @@
   padding: 0;
   cursor: pointer;
   z-index: 2;
+  transition: ease-in-out 0.3s;
   text-shadow:
     0 0 8px rgba(0, 255, 255, 0.9),
     0 0 14px rgba(255, 36, 36, 0.9),
@@ -145,7 +146,7 @@
 }
 
 .closeButton:hover {
-  color: #9efcff;
+  color: #ff0000;
 }
 
 @keyframes openFolder {

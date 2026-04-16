@@ -6,9 +6,11 @@ function clamp(value, min, max) {
 
 export default function useDraggableWindow(initialPosition = { x: 24, y: 24 }) {
   const [position, setPosition] = useState(initialPosition);
+  const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef(null);
 
   const stopDragging = useCallback(() => {
+    setIsDragging(false);
     dragRef.current = null;
   }, []);
 
@@ -42,6 +44,7 @@ export default function useDraggableWindow(initialPosition = { x: 24, y: 24 }) {
     (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
+      setIsDragging(true);
 
       dragRef.current = {
         offsetX: event.clientX - position.x,
@@ -51,5 +54,5 @@ export default function useDraggableWindow(initialPosition = { x: 24, y: 24 }) {
     [position.x, position.y],
   );
 
-  return { position, startDragging, setPosition };
+  return { position, startDragging, setPosition, isDragging };
 }
