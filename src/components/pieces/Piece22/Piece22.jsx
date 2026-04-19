@@ -158,7 +158,7 @@ const Piece22 = () => {
           const totalHeight = heights.reduce((a, b) => a + b, 0);
           let y = Math.max(14, (h - totalHeight) * 0.5);
 
-          const leftPad = Math.max(24, w * 0.12);
+          const leftPad = Math.max(24, w * 0.35);
           chars = [];
 
           lines.forEach((line, lineIdx) => {

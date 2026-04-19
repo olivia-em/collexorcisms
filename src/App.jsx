@@ -70,7 +70,7 @@ function dedupeTxtEntries(entries) {
 
   return Array.from(byUrl.values()).map((entry, index) => ({
     ...entry,
-    initialX: 38 + (index % 6) * 22,
+    initialX: 400 + (index % 6) * 22,
     initialY: 38 + (index % 6) * 22,
   }));
 }
