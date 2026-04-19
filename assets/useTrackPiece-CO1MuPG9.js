@@ -1,0 +1,1 @@
+import{u as k,r as i,P as p}from"./index-snAfThCm.js";function f(e){const{markVisited:r,markInteracted:s,markCompleted:c,state:t}=k(),a=i.useContext(p);i.useEffect(()=>{a&&r(e)},[a,e]);const o=()=>s(e),m=()=>c(e),n=!!t.completedPieces[e],d=!!t.visitedPieces[e];return{markInteracted:o,markCompleted:m,isCompleted:n,isVisited:d}}export{f as u};
